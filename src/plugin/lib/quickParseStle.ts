@@ -2,7 +2,7 @@ import { match, getPositionFromIndex } from './helper'
 import { Position } from 'vscode'
 
 const styleRegexp = /\.[a-zA-Z][\w-\d_]*/g
-const styleWithDocRegexp = /\/\*([\s\S]*?)\*\/[\s\r\n]*[^\.\{\}]*\.([a-zA-Z][\w-\d_]*)/g
+const styleWithDocRegexp = /\/\*([\s\S]*?)\*\/[\s\r\n]*[^.{}]*\.([a-zA-Z][\w-\d_]*)/g
 
 const styleSingleCommentRegexp = /\/\/.*/g
 const styleMultipleCommentRegExp = /\/\*[\s\S]*?\*\//g

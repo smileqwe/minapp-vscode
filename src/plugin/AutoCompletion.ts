@@ -190,7 +190,7 @@ export default abstract class AutoCompletion {
   /**
    * 创建组件属性的自动补全
    */
-  async createComponentAttributeSnippetItems(lc: LanguageConfig, doc: TextDocument, pos: Position): Promise<CompletionItem[]> {
+  async createComponentAttributeSnippetItems(lc: LanguageConfig, doc: TextDocument, pos: Position, onlyClass = false): Promise<CompletionItem[]> {
     const tag = getTagAtPosition(doc, pos)
     if (!tag) return []
     if (tag.isOnTagName) {
@@ -202,7 +202,7 @@ export default abstract class AutoCompletion {
         // `class` 或者 `xxx-class` 自动提示 class 名
         const existsClass = (tag.attrs[tag.attrName] || '') as string
         return this.autoCompleteClassNames(doc, existsClass ? existsClass.trim().split(/\s+/) : [])
-      } else if (typeof attrValue === 'string') {
+      } else if (typeof attrValue === 'string' && !onlyClass) {
         if (tag.attrName.startsWith('bind') || tag.attrName.startsWith('catch')) {
           // 函数自动补全
           return this.autoCompleteMethods(doc, attrValue.replace(/"|'/, ''))
@@ -229,7 +229,7 @@ export default abstract class AutoCompletion {
         //   return this.autoCompleteMethods(doc, attrValue.replace(/"|'/, ''))
       }
       return []
-    } else {
+    } else if (!onlyClass) {
       const res = await autocompleteTagAttr(tag.name, tag.attrs, lc, this.getCustomOptions(doc))
       let triggers: CompletionItem[] = []
 
@@ -257,6 +257,7 @@ export default abstract class AutoCompletion {
         ...triggers,
       ]
     }
+    return Promise.resolve([])
   }
 
   /**
@@ -272,7 +273,7 @@ export default abstract class AutoCompletion {
    *    @xxx.default, @xxx.user, @xxx.stop
    */
   async createSpecialAttributeSnippetItems(lc: LanguageConfig, doc: TextDocument, pos: Position): Promise<CompletionItem[]> {
-    const prefix = getTextAtPosition(doc, pos, /[:@\w\d\.-]/) as string
+    const prefix = getTextAtPosition(doc, pos, /[:@\w\d.-]/) as string
     if (!prefix) return []
 
     const tag = getTagAtPosition(doc, pos)

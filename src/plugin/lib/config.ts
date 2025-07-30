@@ -78,6 +78,8 @@ export interface Config {
   documentSelector: string[]
   /** */
   sass: Options
+  /** 当前项目根目录 (主要为了多仓库项目设置) */
+  rootPath: string
 }
 
 export const config: Config = {
@@ -108,6 +110,7 @@ export const config: Config = {
   prettier: {},
   documentSelector: ['wxml'],
   sass: {},
+  rootPath: ''
 }
 
 
@@ -139,6 +142,7 @@ function getConfig() {
   config.jsBeautifyHtml = minapp.get('jsBeautifyHtml', {})
   config.documentSelector = minapp.get('documentSelector', ['wxml'])
   config.sass = minapp.get('sass', {})
+  config.rootPath = minapp.get('rootPath', '')
 }
 
 function getResolveRoots(doc: vscode.TextDocument): string[] {

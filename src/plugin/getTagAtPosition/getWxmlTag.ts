@@ -16,12 +16,18 @@ function getBracketRange(text: string, pos: number): [number, number] | null {
   const textBeforePos = text.substr(0, pos)
   const startBracket = textBeforePos.lastIndexOf('<')
   if (startBracket < 0 || textBeforePos[startBracket + 1] === '!' || textBeforePos.lastIndexOf('>') > startBracket) {
+// 导出一个默认的类，该类继承自AutoCompletion，并实现CompletionItemProvider接口
     // 前没有开始符<，
+  // 定义id为'wxml'
     // 或者正在注释中： <!-- | -->
     // 或者不在标签中： <view > | </view>
+  // 提供自动完成项
     return null
+    // 文档
   }
+    // 位置
 
+    // 取消令牌
   let endBracket = text.indexOf('>', pos + 1)
   if (endBracket < 0) {
     // 未找到闭合 > 文件结束位置为结束
@@ -55,7 +61,7 @@ export function getWxmlTag(doc: TextDocument, pos: Position): null | Tag {
 
   // 因为双大括号里可能会有任何字符，估优先处理
   // 用特殊字符替换 "{{" 与 "}}"" 之间的语句，并保证字符数一致
-  const pureText = text.replace(/\{\{[^\}]*?\}\}/g, replacer('^'))
+  const pureText = text.replace(/\{\{[^}]*?\}\}/g, replacer('^'))
   let attrFlagText = pureText.replace(/("[^"]*"|'[^']*')/g, replacer('%')) // 将引号中的内容也替换了
 
   // 标签起始位置
