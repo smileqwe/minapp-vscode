@@ -20,15 +20,21 @@ function autoRequireSass(file: string): SassType {
  */
 export default function(op: Sass.Options): string {
   try {
+    let imports = ''
     const options: Sass.Options = {
       ...config.sass,
       ...op,
       sourceMap: false,
       sourceMapContents: false,
+      importer: (url) => {
+        imports += `@import "${url}";`
+        return { contents: '' }
+      }
     }
-    return autoRequireSass(op.file || process.cwd())
-      .renderSync(options)
-      .css.toString()
+    const a = autoRequireSass(op.file || process.cwd())
+    .renderSync(options)
+    
+    return imports + a.css.toString()
   } catch (error) {
     // sass 渲染失败退回
     console.error(error)

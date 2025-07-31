@@ -83,7 +83,7 @@ export function activate(context: ExtensionContext): void {
   )
 
   // 标记插件激活状态
-  commands.executeCommand('setContext', CONTEXT_KEYS.init, true);
+  commands.executeCommand('setContext', CONTEXT_KEYS.init, true)
 }
 
 export function deactivate(): void {

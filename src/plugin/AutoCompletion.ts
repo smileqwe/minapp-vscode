@@ -310,17 +310,25 @@ export default abstract class AutoCompletion {
     const items: CompletionItem[] = []
     const stylefiles = getClass(doc, this.config)
     const root = getRoot(doc)
-
+    const cache: Record<string, CompletionItem> = {}
     stylefiles.forEach((stylefile, sfi) => {
       stylefile.styles.forEach(sty => {
         if (!existsClassNames.includes(sty.name)) {
-          existsClassNames.push(sty.name)
-          const i = new CompletionItem(sty.name)
-          i.kind = CompletionItemKind.Variable
-          i.detail = root ? path.relative(root, stylefile.file) : path.basename(stylefile.file)
-          i.sortText = 'style' + sfi
-          i.documentation = new MarkdownString(sty.doc)
-          items.push(i)
+          // existsClassNames.push(sty.name)
+          const filePath = root ? path.relative(root, stylefile.file) : path.basename(stylefile.file)
+
+          if (!cache[sty.name]) {
+            const i = new CompletionItem(sty.name)
+            i.kind = CompletionItemKind.Variable
+            i.detail = ''
+            i.sortText = 'style' + sfi
+            i.documentation = new MarkdownString().appendMarkdown(`<span style="color:#999">${filePath}</span>`).appendCodeblock(sty.doc, 'css')
+            items.push(i)
+            cache[sty.name] = i
+          } else {
+            (cache[sty.name].documentation as MarkdownString).appendMarkdown(`<span style="color:#999">${filePath}</span>`).appendCodeblock(sty.doc, 'css')
+          }
+          
         }
       })
     })

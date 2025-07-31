@@ -3,8 +3,13 @@
  Author Mora <qiuzhongleiabc@126.com> (https://github.com/qiu8310)
 *******************************************************************/
 
+import { MarkdownString, TextDocument } from 'vscode'
 import { CustomOptions, getCustomComponents } from './custom'
 import { components, getComponentMarkdown, getComponentAttrMarkdown, ComponentAttr, LanguageConfig } from './dev'
+import { getClass } from '../../plugin/lib/StyleFile'
+import { config } from '../../plugin/lib/config'
+import { getRoot } from '../../plugin/lib/helper'
+import * as path from 'path'
 
 export async function hoverComponentMarkdown(tag: string, lc: LanguageConfig, co?: CustomOptions) {
   const comp = await getComponent(tag, lc, co)
@@ -42,4 +47,19 @@ async function getComponent(tagName: string, lc: LanguageConfig, co?: CustomOpti
     comp = (await getCustomComponents(co)).find(c => c.name === tagName)
   }
   return comp
+}
+
+export function classHover(doc: TextDocument, classname: string): MarkdownString | null{
+  const styleFile = getClass(doc, config)
+  const root = getRoot(doc)
+  const hoverText = new MarkdownString()
+  styleFile.forEach((styleFile, sfi) => {
+    styleFile.styles.forEach((style, sty) => {
+      if (style.name === classname) {
+        const filePath = root ? path.relative(root, styleFile.file) : path.basename(styleFile.file)
+        hoverText.appendMarkdown(`<span style="color:#999">${filePath}</span>`).appendCodeblock(style.doc, 'css')
+      }
+    })
+  })
+  return hoverText.value ? hoverText : null
 }

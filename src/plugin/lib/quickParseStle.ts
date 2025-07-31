@@ -29,7 +29,13 @@ export function quickParseStyle(styleContent: string, { unique }: quickParseStyl
   match(content, styleRegexp).forEach(mat => {
     const name = mat[0].substr(1)
     if (!unique || !style.find(s => s.name === name)) {
-      style.push({ doc: '', pos: getPositionFromIndex(content, mat.index), name })
+      const reg = new RegExp(`\\.${name}\\s*\\{([^}]*)\\}`, 'g')
+      const match = reg.exec(content)
+      let doc = ''
+      if (match) {
+        doc = `{${ match[1]}}`
+      }
+      style.push({ doc, pos: getPositionFromIndex(content, mat.index), name })
     }
   })
 

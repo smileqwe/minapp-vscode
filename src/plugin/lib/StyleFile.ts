@@ -92,7 +92,7 @@ export function parseStyleFile(doc: TextDocument, file: string): StyleFile[] {
         }
         // 这里先为解析过的文件设置一个空数组，防止循环依赖导致死循环
         fileCache[file] = cache
-        const content = isScss(file) ? loadScss({ file }) : fs.readFileSync(file).toString()
+        const content = loadScss({ file })
         // 如果引入了其他样式文件，解析其他样式文件
         let url: null | RegExpExecArray = null
         let otherImporters: StyleFile[] = []
@@ -105,7 +105,7 @@ export function parseStyleFile(doc: TextDocument, file: string): StyleFile[] {
         }
         cache.value.imports = otherImporters.map(f => f.file)
         console.log('读取主样式')
-        cache.value.styles = quickParseStyle(content)
+        cache.value.styles = quickParseStyle(content, { unique: false })
         if (otherImporters.length) {
           return [cache.value, ...otherImporters]
         }
