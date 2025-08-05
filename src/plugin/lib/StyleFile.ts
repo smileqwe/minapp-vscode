@@ -39,22 +39,22 @@ function getAbsPath(doc: TextDocument, inputPath: string) {
 export function parseStyleFile(doc: TextDocument, file: string): StyleFile[] {
   try {
     let cache = fileCache[file]
-    const editor = window.visibleTextEditors.find(e => e.document.fileName === file)
-    if (editor) {
-      const content = isScss(file) ? loadScss({ data: editor.document.getText(), file }) : editor.document.getText()
-      // 如果引入了其他样式文件，解析其他样式文件
-      if (/@import\s+['"]([^'"]+)['"]/.test(content)) {
-        const otherImporters = content.match(/@import\s+['"]([^'"]+)['"]/g)
-        console.log('加载引入样式', otherImporters)
-      }
-      return [
-        {
-          file,
-          styles: quickParseStyle(content),
-          imports: [],
-        },
-      ]
-    } else {
+    // const editor = window.visibleTextEditors.find(e => e.document.fileName === file)
+    // if (editor) {
+    //   const content = isScss(file) ? loadScss({ data: editor.document.getText(), file }) : editor.document.getText()
+    //   // 如果引入了其他样式文件，解析其他样式文件
+    //   if (/@import\s+['"]([^'"]+)['"]/.test(content)) {
+    //     const otherImporters = content.match(/@import\s+['"]([^'"]+)['"]/g)
+    //     console.log('加载引入样式', otherImporters)
+    //   }
+    //   return [
+    //     {
+    //       file,
+    //       styles: quickParseStyle(content),
+    //       imports: [],
+    //     },
+    //   ]
+    // } else {
       // 文件是否修改
       const fileIsModified = (filePath: string) => {
         const stat = fs.statSync(filePath)
@@ -97,7 +97,7 @@ export function parseStyleFile(doc: TextDocument, file: string): StyleFile[] {
         let url: null | RegExpExecArray = null
         let otherImporters: StyleFile[] = []
         const regex = new RegExp(/@import\s+['"]([^'"]+)['"]/, 'g')
-        while ((url = regex.exec(content)) !== null) {
+        while ((url = regex.exec(content.css)) !== null) {
           const fileUrl = getAbsPath(doc, url[1])
           const a = parseStyleFile(doc, fileUrl)
           console.log('读取引入样式')
@@ -114,7 +114,7 @@ export function parseStyleFile(doc: TextDocument, file: string): StyleFile[] {
       }
 
       return [cache.value]
-    }
+    // }
   } catch (e) {
     return [
       {

@@ -147,7 +147,11 @@ function getConfig() {
 
 function getResolveRoots(doc: vscode.TextDocument): string[] {
   const root = vscode.workspace.getWorkspaceFolder(doc.uri) as vscode.WorkspaceFolder
-  return root ? config.resolveRoots.map(r => path.resolve(root.uri.fsPath, r)) : []
+  let roots = config.resolveRoots
+  if (config.rootPath) {
+    roots = [...roots, config.rootPath, `${config.rootPath}/node_modules`]
+  }
+  return root ? roots.map(r => path.resolve(root.uri.fsPath, r)) : []
 }
 
 export function configActivate(): void {

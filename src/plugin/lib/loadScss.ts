@@ -18,13 +18,17 @@ function autoRequireSass(file: string): SassType {
  * 渲染scss
  * @param op sass 配置
  */
-export default function(op: Sass.Options): string {
+export default function(op: Sass.Options): {
+  css: string,
+  map: string | undefined
+} {
   try {
     let imports = ''
     const options: Sass.Options = {
       ...config.sass,
       ...op,
-      sourceMap: false,
+      outFile: './a.css',
+      sourceMap: true,
       sourceMapContents: false,
       importer: (url) => {
         imports += `@import "${url}";`
@@ -34,10 +38,16 @@ export default function(op: Sass.Options): string {
     const a = autoRequireSass(op.file || process.cwd())
     .renderSync(options)
     
-    return imports + a.css.toString()
+    return {
+      css: imports + a.css.toString(),
+      map: a.map ? a.map.toString() : undefined
+    } 
   } catch (error) {
     // sass 渲染失败退回
     console.error(error)
-    return op.data || (op.file ? readFileSync(op.file).toString() : '')
+    return {
+      css: op.data || (op.file ? readFileSync(op.file).toString() : ''),
+      map: undefined
+    }  
   }
 }
