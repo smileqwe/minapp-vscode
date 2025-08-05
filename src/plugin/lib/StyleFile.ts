@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { TextDocument, window, Position } from 'vscode'
+import { TextDocument, Position } from 'vscode'
 import { quickParseStyle } from './quickParseStle'
 import { config, Config } from './config'
 import { getRoot } from './helper'
@@ -21,9 +21,9 @@ export interface StyleFile {
 
 const fileCache: { [file: string]: { mtime: Date; value: StyleFile } } = {}
 
-function isScss(file: string): boolean {
-  return /\.[ls][eac]ss/.test(file)
-}
+// function isScss(file: string): boolean {
+//   return /\.[ls][eac]ss/.test(file)
+// }
 
 function getAbsPath(doc: TextDocument, inputPath: string) {
   const rootPath = path.resolve(getRoot(doc) as string, config.rootPath)

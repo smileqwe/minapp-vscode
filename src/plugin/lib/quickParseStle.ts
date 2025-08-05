@@ -3,12 +3,9 @@ import { Position } from 'vscode'
 import { SourceMapConsumer } from 'source-map'
 
 const styleRegexp = /\.([a-zA-Z][\w-\d_]*)\s*\{/g
-const styleWithDocRegexp = /\/\*([\s\S]*?)\*\/[\s\r\n]*[^.{}]*\.([a-zA-Z][\w-\d_]*)/g
 
 const styleSingleCommentRegexp = /\/\/.*/g
 const styleMultipleCommentRegExp = /\/\*[\s\S]*?\*\//g
-
-const startStarRegexp = /^\s*\*+ ?/gm
 
 export namespace quickParseStyle {
   export interface Options {
@@ -59,8 +56,4 @@ export function quickParseStyle(styleContent: { css: string, map: string | undef
 
 function replacer(raw: string) {
   return raw.replace(/[^\r\n]/g, ' ')
-}
-
-function parseDoc(doc: string) {
-  return doc.replace(startStarRegexp, '').trim()
 }

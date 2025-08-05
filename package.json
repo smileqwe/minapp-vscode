@@ -2,7 +2,7 @@
   "name": "minapp-vscode",
   "displayName": "WXML - Language Service",
   "description": "WXML Language Support",
-  "version": "2.4.15",
+  "version": "2.4.16",
   "publisher": "v_jinlluo",
   "extensionKind": [
     "workspace"
@@ -39,11 +39,11 @@
       "url": "https://github.com/iChenLei"
     }
   ],
-  "bugs": "https://wesure.coding.inwesure.com/p/g004/d/miniapp-vscode/git",
-  "homepage": "https://wesure.coding.inwesure.com/p/g004/d/miniapp-vscode/git",
+  "bugs": "https://github.com/smileqwe/minapp-vscode/issues",
+  "homepage": "https://github.com/smileqwe/minapp-vscode",
   "repository": {
     "type": "git",
-    "url": "https://wesure.coding.inwesure.com/p/g004/d/miniapp-vscode/git"
+    "url": "https://github.com/smileqwe/minapp-vscode"
   },
   "engines": {
     "vscode": "^1.59.1"
