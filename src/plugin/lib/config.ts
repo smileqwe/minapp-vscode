@@ -118,7 +118,7 @@ function getConfig() {
   const minapp = vscode.workspace.getConfiguration('minapp-vscode')
   config.disableCustomComponentAutocomponent = minapp.get('disableCustomComponentAutocomponent', false)
   config.showSuggestionOnEnter = minapp.get('showSuggestionOnEnter', false)
-  config.resolveRoots = minapp.get('resolveRoots', ['src', 'node_modules'])
+  config.resolveRoots = minapp.get('resolveRoots', ['src', 'node_modules', 'miniprogram_npm'])
   config.linkAttributeNames = minapp.get('linkAttributeNames', ['src'])
   config.formatMaxLineCharacters = minapp.get('formatMaxLineCharacters', 100)
   config.disableDecorate = minapp.get('disableDecorate', true)
@@ -149,7 +149,8 @@ function getResolveRoots(doc: vscode.TextDocument): string[] {
   const root = vscode.workspace.getWorkspaceFolder(doc.uri) as vscode.WorkspaceFolder
   let roots = config.resolveRoots
   if (config.rootPath) {
-    roots = [...roots, config.rootPath, `${config.rootPath}/node_modules`]
+    // console.log(config, roots.map(r => path.resolve(config.rootPath, r)))
+    roots = [...roots, ...roots.map(r => config.rootPath+ '/'+  r)]
   }
   return root ? roots.map(r => path.resolve(root.uri.fsPath, r)) : []
 }

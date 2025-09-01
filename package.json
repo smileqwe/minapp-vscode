@@ -74,7 +74,8 @@
           "description": "解析文件引用关系用的根目录",
           "default": [
             "node_modules",
-            "src"
+            "src",
+            "miniprogram_npm"
           ],
           "items": {
             "type": "string"

@@ -1,7 +1,8 @@
-import { getFileContent, match, getPositionFromIndex } from './helper'
+import { getFileContent, getPositionFromIndex } from './helper'
 import * as path from 'path'
 import * as fs from 'fs'
 import { Location, Uri, Position, Range, window } from 'vscode'
+import * as ts from 'typescript'
 
 interface PropInfo {
   loc: Location
@@ -22,109 +23,189 @@ const resultCache = new Map<string, { version: number; data: PropInfo[] }>()
  * 用于无限制匹配式函数过滤
  * `if(x){}` 等满足函数正
  */
-const reservedWords = ['if', 'switch', 'catch', 'while', 'for', 'constructor']
+// const reservedWords = ['if', 'switch', 'catch', 'while', 'for', 'constructor']
 
 function parseScriptFile(file: string, type: string, prop: string) {
   const content = getFileContent(file)
   const locs: PropInfo[] = []
 
-  let reg: RegExp | null = null
-  /**
-   * 空白符正则
-   */
-  const s = '\\s*'
+  try {
+    // 创建TypeScript源文件
+    const sourceFile = ts.createSourceFile(
+      file,
+      content,
+      ts.ScriptTarget.Latest,
+      true,
+      file.endsWith('.tsx') || file.endsWith('.jsx')
+        ? ts.ScriptKind.TSX
+        : file.endsWith('.ts')
+        ? ts.ScriptKind.TS
+        : ts.ScriptKind.JS
+    )
 
-  if (type === 'prop') {
-    reg = new RegExp(`^${s}` + prop + `${s}:`, 'gm')
-  } else if (type === 'method') {
-    // prop: () => {}
-    // prop: function() {}
-    // prop: function xxx() {}
-    // prop: (e:{}) => {}
-    // reg = new RegExp(`^${s}` + prop + `(${s}:${b}${s}=>|${s}:${s}function|${s}${b}${s}\\{)`, 'gm')
+    // 遍历AST节点
+    function visit(node: ts.Node) {
+      if (type === 'prop') {
+        // 查找属性定义
+        if (ts.isPropertyAssignment(node) || ts.isPropertyDeclaration(node) || ts.isPropertySignature(node)) {
+          const name = getPropertyName(node)
+          if (name === prop) {
+            addLocation(node, name, getPropertyDetail(node))
+          }
+        }
+        // 查找变量声明
+        // else if (ts.isVariableDeclaration(node)) {
+        //   // 处理解构赋值和普通变量声明
+        //   const bindingNames = getBindingNames(node.name)
+        //   bindingNames.forEach(bindingName => {
+        //     if (bindingName === prop) {
+        //       addLocation(node, bindingName, `${ts.SyntaxKind[node.kind]}: ${bindingName}`)
+        //     }
+        //   })
+        // }
+        // 查找参数声明（函数参数中的解构）
+        else if (ts.isParameter(node)) {
+          const bindingNames = getBindingNames(node.name)
+          bindingNames.forEach(bindingName => {
+            if (bindingName === prop) {
+              addLocation(node, bindingName, `parameter: ${bindingName}`)
+            }
+          })
+        }
+        // 查找绑定元素（解构赋值中的具体元素）
+        else if (ts.isBindingElement(node)) {
+          const bindingNames = getBindingNames(node.name)
+          bindingNames.forEach(bindingName => {
+            if (bindingName === prop) {
+              addLocation(node, bindingName, `binding: ${bindingName}`)
+            }
+          })
+        } else if (ts.isIdentifier(node)) {
+          const name = node.getText(sourceFile)
+          if (name === prop) {
+            addLocation(node, name, `${ts.SyntaxKind[node.kind]}: ${name}`)
+          }
+        }
+      } else if (type === 'method') {
+        // 查找方法定义
+        if (ts.isMethodDeclaration(node) || ts.isMethodSignature(node)) {
+          const name = getPropertyName(node)
+          if (name === prop) {
+            addLocation(node, name, getMethodDetail(node))
+          }
+        }
+        // 查找函数式属性
+        else if (ts.isPropertyAssignment(node)) {
+          const name = getPropertyName(node)
+          if (name === prop && isFunctionLikeExpression(node.initializer)) {
+            addLocation(node, name, getFunctionDetail(node))
+          }
+        }
+        // 查找函数声明
+        else if (ts.isFunctionDeclaration(node)) {
+          const name = node.name?.getText(sourceFile)
+          if (name === prop) {
+            addLocation(node, name, getFunctionDeclarationDetail(node))
+          }
+        }
+      }
 
-    /**
-     * 函数参数表正则
-     * 允许参数跨行
-     * - 无参数`()`
-     * - 有参数`( e )`
-     * - 有参类型`( e?:{}= )`
-     * - 参数跨行
-     * ```ts
-     *  (
-     *    e: event
-     *  )
-     * ```
-     * ```js
-     * /\(\s*(?:[\w\d_$]+(?:[,=:?][\s\S]*?)?)?\)/
-     * ```
-     */
-    const param = `\\(${s}(?:[\\w\\d_$]+(?:[,=:?][\\s\\S]*?)?)?\\)`
-    const async = `(?:async\\s+)?`
-    /**
-     * 返回值正则
-     * `:type `
-     */
-    const returnType = `(?::[\\s\\S]*?)?`
-    /**
-     * 方法定义正则
-     * - 普通方法`prop(...){`
-     * - 返回值方法`prop(...): void {`
-     * - 异步方法`async prop(...){`
-     */
-    const methodReg = `${async}(${prop})${s}${param}${s}${returnType}\\{`
-    /**
-     * 属性式函数定义 正则
-     * - 箭头函数`prop: (...) =>`
-     * - 异步箭头函数`prop: async (...) =>`
-     * - 普通函数声明`prop: function...`
-     * - 异步函数声明`prop: async function...`
-     */
-    const propFuncReg = `(${prop})${s}:${s}${async}(?:${param}${s}${returnType}=>|function\\W)`
-    /**
-     * 直接认为如下格式的是函数进行模糊匹配
-     * - 对象申明 func : throttle(() => {})
-     */
-    const fuzzyMatchReg = `${prop}${s}:`
-    reg = new RegExp(`^${s}(${methodReg}|${propFuncReg}|${fuzzyMatchReg})`, 'gm')
-  }
+      ts.forEachChild(node, visit)
+    }
 
-  if (!reg) return locs
+    function getPropertyName(
+      node:
+        | ts.PropertyAssignment
+        | ts.PropertyDeclaration
+        | ts.PropertySignature
+        | ts.MethodDeclaration
+        | ts.MethodSignature
+    ): string {
+      if (ts.isIdentifier(node.name)) {
+        return node.name.text
+      } else if (ts.isStringLiteral(node.name)) {
+        return node.name.text
+      } else if (ts.isComputedPropertyName(node.name)) {
+        return node.name.getText(sourceFile)
+      }
+      return node.name?.getText(sourceFile) || ''
+    }
 
-  match(content, reg)
-    .filter(mat => {
-      const property = mat[2] || mat[3]
-      // 精确匹配或者不是关键字
-      return property === prop || !reservedWords.includes(property)
-    })
-    .forEach(mat => {
-      const property = mat[2] || mat[3] || prop
-      const pos = getPositionFromIndex(content, mat.index + mat[0].indexOf(property))
-      const endPos = new Position(pos.line, pos.character + property.length)
+    function isFunctionLikeExpression(node: ts.Expression): boolean {
+      return (
+        ts.isArrowFunction(node) ||
+        ts.isFunctionExpression(node) ||
+        (ts.isCallExpression(node) && node.expression.getText(sourceFile).includes('function'))
+      )
+    }
+
+    function getPropertyDetail(node: ts.PropertyAssignment | ts.PropertyDeclaration | ts.PropertySignature): string {
+      const name = getPropertyName(node)
+      if (ts.isPropertyAssignment(node)) {
+        return `${name}: ${node.initializer.getText(sourceFile).substring(0, 50)}...`
+      }
+      return `${name}: ${node.type?.getText(sourceFile) || 'any'}`
+    }
+
+    function getMethodDetail(node: ts.MethodDeclaration | ts.MethodSignature): string {
+      const name = getPropertyName(node)
+      const params = node.parameters.map(p => p.getText(sourceFile)).join(', ')
+      const returnType = node.type ? `: ${node.type.getText(sourceFile)}` : ''
+      return `${name}(${params})${returnType}`
+    }
+
+    function getFunctionDetail(node: ts.PropertyAssignment): string {
+      const name = getPropertyName(node)
+      if (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer)) {
+        const func = node.initializer as ts.ArrowFunction | ts.FunctionExpression
+        const params = func.parameters.map(p => p.getText(sourceFile)).join(', ')
+        const returnType = func.type ? `: ${func.type.getText(sourceFile)}` : ''
+        return `${name}: (${params})${returnType} => {...}`
+      }
+      return `${name}: ${node.initializer.getText(sourceFile).substring(0, 50)}...`
+    }
+
+    function getFunctionDeclarationDetail(node: ts.FunctionDeclaration): string {
+      const name = node.name?.getText(sourceFile) || ''
+      const params = node.parameters.map(p => p.getText(sourceFile)).join(', ')
+      const returnType = node.type ? `: ${node.type.getText(sourceFile)}` : ''
+      return `function ${name}(${params})${returnType}`
+    }
+
+    function addLocation(node: ts.Node, name: string, detail: string) {
+      const start = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile))
+      const end = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile) + name.length)
+      const startOffset = sourceFile.getPositionOfLineAndCharacter(start.line, start.character)
+      const endOffset = sourceFile.getPositionOfLineAndCharacter(end.line, end.character)
+      const text = sourceFile.text.substring(startOffset, endOffset)
+      if (text !== name) return
+      locs.push({
+        loc: new Location(
+          Uri.file(file),
+          new Range(new Position(start.line, start.character), new Position(end.line, end.character))
+        ),
+        name,
+        detail,
+      })
+    }
+
+    visit(sourceFile)
+  } catch (error) {
+    console.warn('AST parsing failed, falling back to string search:', error)
+    // 如果AST解析失败，回退到简单的字符串搜索
+    if (content && content.indexOf(prop) !== -1) {
+      const pos = getPositionFromIndex(content, content.indexOf(prop))
+      const endPos = new Position(pos.line, pos.character + prop.length)
       locs.push({
         loc: new Location(Uri.file(file), new Range(pos, endPos)),
-        name: property,
-        detail: mat[1] || mat[0],
+        name: prop,
+        detail: prop,
       })
-    })
-
-  /**
-   * 没有匹配到任何有效的定义就直接字符搜索
-   * 取第一个作为返回
-   */
-  if (locs.length === 0 && content && content.indexOf(prop) !== -1) {
-    const pos = getPositionFromIndex(content, content.indexOf(prop))
-    const endPos = new Position(pos.line, pos.character + prop.length)
-    locs.push({
-      loc: new Location(Uri.file(file), new Range(pos, endPos)),
-      name: prop,
-      detail: prop,
-    })
+    }
   }
 
   return locs
 }
-
 /**
  * 解析文件映射关系
  * @param wxmlFile
@@ -183,4 +264,36 @@ export function getProp(wxmlFile: string, type: string, prop: string): PropInfo[
     resultCache.set(key, { version, data: result })
   }
   return result
+}
+
+/**
+ * 从绑定名称中提取所有标识符
+ * 处理解构赋值、数组解构、对象解构等情况
+ */
+function getBindingNames(name: ts.BindingName): string[] {
+  const names: string[] = []
+
+  function collectNames(node: ts.BindingName) {
+    if (ts.isIdentifier(node)) {
+      // 普通标识符: const a = 1
+      names.push(node.text)
+    } else if (ts.isObjectBindingPattern(node)) {
+      // 对象解构: const { a, b, c: d } = obj
+      node.elements.forEach(element => {
+        if (ts.isBindingElement(element)) {
+          collectNames(element.name)
+        }
+      })
+    } else if (ts.isArrayBindingPattern(node)) {
+      // 数组解构: const [a, b, ...rest] = arr
+      node.elements.forEach(element => {
+        if (element && ts.isBindingElement(element)) {
+          collectNames(element.name)
+        }
+      })
+    }
+  }
+
+  collectNames(name)
+  return names
 }
