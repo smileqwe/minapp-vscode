@@ -113,30 +113,48 @@ Component({
 
 ### 变量悬停提示
 
-鼠标移入模板中的 JS 变量时，会自动显示该变量的类型定义和所在位置：
+鼠标移入模板中的 JS 变量时，会自动显示该变量的 **TypeScript 类型签名**（类似原生 TS 的悬停提示）：
 
 ```html
 <view>{{ userName }}</view>
-<!-- 鼠标移入 userName，显示变量定义信息 -->
+<!-- 鼠标移入 userName -->
+<!-- 显示：const userName: string -->
+
+<view>{{ userBenefit }}</view>
+<!-- 鼠标移入 userBenefit -->
+<!-- 显示：const userBenefit: ComputedRef<any> -->
 
 <view class="{{containerClass}}">
-  <!-- 鼠标移入 containerClass，显示其类型和定义位置 -->
+  <!-- 鼠标移入 containerClass -->
+  <!-- 显示：const containerClass: string -->
 </view>
 
 <view>{{ user.name }}</view>
-<!-- 支持多级属性访问，显示根变量 user 的定义 -->
+<!-- 支持多级属性访问，显示根变量类型 -->
+<!-- 显示：const user: object -->
 ```
+
+**支持的类型识别：**
+- ✅ 基本类型：`string`, `number`, `boolean`, `null`, `undefined`
+- ✅ 数组类型：`string[]`, `number[]`
+- ✅ 对象类型：`object`
+- ✅ 函数类型：`(param: string) => void`
+- ✅ Vue3 响应式类型：`Ref<T>`, `ComputedRef<T>`, `UnwrapRef<T>`
+- ✅ 显式类型标注（TypeScript）
 
 **支持场景：**
 - ✅ `{{ }}` 表达式中的变量
 - ✅ 属性值中的变量引用
 - ✅ 多级属性访问（如 `obj.prop.subProp`）
-- ✅ 数组索引访问（如 `list[0]`）
+- ✅ Vue3 Composition API 变量
+- ✅ 小程序 Page/Component data/properties
 
-**显示信息：**
-- 📝 变量定义详情（如 `const userName = ""`）
-- 📍 定义所在的文件和行号
-- 🔗 Cmd/Ctrl + Click 可直接跳转到定义处
+**显示格式：**
+```typescript
+const variableName: Type
+```
+
+文件位置会显示在下方（如 `index.js:10`），点击可跳转。
 
 <a id="create-component"></a>
 

@@ -91,32 +91,28 @@ export default class implements HoverProvider {
     markdown.isTrusted = true
     markdown.supportHtml = true
 
-    // 标题
-    if (variableInfo.isPropertyAccess) {
-      markdown.appendMarkdown(`### 🔍 \`${variableInfo.variable}\`\n\n`)
-      markdown.appendMarkdown(`*属性访问，根变量: \`${variableInfo.rootVariable}\`*\n\n`)
-    } else {
-      markdown.appendMarkdown(`### 🔍 变量: \`${variableInfo.variable}\`\n\n`)
-    }
-
-    // 变量定义详情
+    // 使用 TypeScript 风格的类型提示
     propInfos.forEach((info, index) => {
       if (index > 0) markdown.appendMarkdown('\n\n---\n\n')
       
-      markdown.appendMarkdown(`**定义：** \`${info.detail}\`\n\n`)
+      // 显示类型签名（类似 VSCode 的 TypeScript 提示）
+      if (info.typeInfo) {
+        // 格式：const variableName: Type
+        const declaration = info.detail.startsWith('const ') || info.detail.startsWith('let ') || info.detail.startsWith('var ')
+          ? info.detail.split('=')[0].trim() // 提取声明部分
+          : `const ${info.name}`
+        
+        markdown.appendCodeblock(`${declaration}: ${info.typeInfo}`, 'typescript')
+      } else {
+        // 降级显示定义
+        markdown.appendCodeblock(info.detail, 'typescript')
+      }
       
-      // 文件位置
+      // 文件位置（小字显示）
       const fileName = info.loc.uri.fsPath.split('/').pop()
       const line = info.loc.range.start.line + 1
-      markdown.appendMarkdown(`**位置：** ${fileName}:${line}\n\n`)
+      markdown.appendMarkdown(`\n*${fileName}:${line}*\n`)
     })
-
-    // 添加提示
-    if (variableInfo.isPropertyAccess) {
-      markdown.appendMarkdown('\n💡 *提示：点击可跳转到根变量定义*')
-    } else {
-      markdown.appendMarkdown('\n💡 *提示：点击 Cmd/Ctrl + Click 可跳转到定义*')
-    }
 
     return new Hover(markdown, range)
   }
@@ -135,19 +131,24 @@ export default class implements HoverProvider {
     markdown.isTrusted = true
     markdown.supportHtml = true
 
-    markdown.appendMarkdown(`### 🔍 变量: \`${word}\`\n\n`)
-
     propInfos.forEach((info, index) => {
       if (index > 0) markdown.appendMarkdown('\n\n---\n\n')
       
-      markdown.appendMarkdown(`**定义：** \`${info.detail}\`\n\n`)
+      // 显示类型签名
+      if (info.typeInfo) {
+        const declaration = info.detail.startsWith('const ') || info.detail.startsWith('let ') || info.detail.startsWith('var ')
+          ? info.detail.split('=')[0].trim()
+          : `const ${info.name}`
+        
+        markdown.appendCodeblock(`${declaration}: ${info.typeInfo}`, 'typescript')
+      } else {
+        markdown.appendCodeblock(info.detail, 'typescript')
+      }
       
       const fileName = info.loc.uri.fsPath.split('/').pop()
       const line = info.loc.range.start.line + 1
-      markdown.appendMarkdown(`**位置：** ${fileName}:${line}\n\n`)
+      markdown.appendMarkdown(`\n*${fileName}:${line}*\n`)
     })
-
-    markdown.appendMarkdown('\n💡 *提示：点击 Cmd/Ctrl + Click 可跳转到定义*')
 
     return new Hover(markdown)
   }

@@ -3,49 +3,68 @@
 
 ### ✨ 新增功能
 
-* **变量悬停提示 (Variable Hover)**
-  - 🔍 鼠标移入 `{{ }}` 表达式中的变量时，自动显示变量的类型定义
-  - 📍 显示变量定义所在的文件名和行号
+* **变量类型悬停提示 (TypeScript-style Hover)**
+  - 🔍 鼠标移入 `{{ }}` 表达式中的变量时，显示 TypeScript 风格的类型签名
+  - 📝 格式：`const variableName: Type`（类似原生 TS 的悬停提示）
   - 🎯 支持多级属性访问（如 `obj.prop.subProp`），智能定位到根变量
-  - 💡 提供快捷跳转提示（Cmd/Ctrl + Click）
-  - ✅ 支持属性值中的变量引用（非 `{{ }}` 场景）
+  - 💡 支持属性值中的变量引用（非 `{{ }}` 场景）
+  - 📍 显示变量定义所在的文件名和行号
+  - ✅ 支持 Vue3 响应式类型：`Ref<T>`, `ComputedRef<T>`, `UnwrapRef<T>` 等
 
-### 🎨 功能细节
+### 🎨 类型识别能力
 
-**悬停显示内容：**
-- 变量名称和完整属性路径
-- 变量定义详情（如 `const userName = ""`）
-- 定义位置（文件名:行号）
-- 是否为属性访问的标识
+**支持的类型：**
+- 基本类型：`string`, `number`, `boolean`, `null`, `undefined`
+- 数组类型：`string[]`, `number[]`, `any[]`
+- 对象类型：`object`
+- 函数类型：`(param: Type) => ReturnType`
+- Vue3 响应式：
+  - `ref()` → `Ref<T>`
+  - `reactive()` → `UnwrapRef<object>`
+  - `computed()` → `ComputedRef<any>`
+  - `toRef()` → `Ref<any>`
+  - `toRefs()` → `ToRefs<object>`
+- TypeScript 显式类型标注
 
 **支持的场景：**
 ```html
 <!-- 简单变量 -->
-<view>{{ userName }}</view>
+<view>{{ userName }}</view>  
+<!-- 显示：const userName: string -->
+
+<!-- Vue3 响应式 -->
+<view>{{ userBenefit }}</view>
+<!-- 显示：const userBenefit: ComputedRef<any> -->
 
 <!-- 属性访问 -->
 <view>{{ user.name }}</view>
+<!-- 显示：const user: object -->
 
-<!-- 属性值中的变量 -->
+<!-- 属性值 -->
 <view class="{{containerClass}}"></view>
-
-<!-- 复杂表达式 -->
-<view>{{ items[0].title }}</view>
+<!-- 显示：const containerClass: string -->
 ```
 
 ### 🔧 技术实现
 
-* 增强 `src/plugin/HoverProvider.ts`：
-  - 新增 `getInterpolationHover()` 处理 `{{ }}` 表达式悬停
-  - 新增 `getVariableHover()` 处理属性值变量悬停
-  - 新增 `extractVariableAtPosition()` 精确提取光标位置的变量信息
-* 复用 `src/plugin/lib/ScriptFile.ts` 的 `getProp()` 查找变量定义
-* 支持根变量定位（多级属性访问时定位到根变量）
+* 增强 `src/plugin/lib/ScriptFile.ts`：
+  - 新增 `inferTypeFromNode()` 从 AST 节点推断类型
+  - 新增 `inferTypeFromExpression()` 从表达式推断类型
+  - 识别 Vue3 响应式 API 调用（ref, reactive, computed 等）
+  - 识别 TypeScript 显式类型标注
+  - 识别字面量类型（string, number, boolean, array, object）
+  - `PropInfo` 接口新增 `typeInfo` 字段
+
+* 优化 `src/plugin/HoverProvider.ts`：
+  - 使用 `markdown.appendCodeblock()` 显示类型签名
+  - 采用 TypeScript 风格的悬停提示格式
+  - 简化显示内容，聚焦类型信息
 
 ### 📝 文档更新
 
-* README.md 添加"变量悬停提示"功能说明
-* 添加使用示例和支持场景说明
+* README.md 更新"变量悬停提示"功能说明
+* 添加支持的类型识别列表和使用示例
+* 添加显示格式说明
 
 ---
 

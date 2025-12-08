@@ -8,6 +8,7 @@ interface PropInfo {
   loc: Location
   name: string
   detail: string
+  typeInfo?: string // TypeScript 类型信息
 }
 /**
  * js/ts 文件映射缓存
@@ -634,7 +635,7 @@ function parseScriptFile(file: string, type: string, prop: string) {
       return `function ${name}(${params})${returnType}`
     }
 
-    function addLocation(node: ts.Node, name: string, detail: string) {
+    function addLocation(node: ts.Node, name: string, detail: string, typeInfo?: string) {
       const start = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile))
       const end = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile) + name.length)
       const startOffset = sourceFile.getPositionOfLineAndCharacter(start.line, start.character)
@@ -648,7 +649,146 @@ function parseScriptFile(file: string, type: string, prop: string) {
         ),
         name,
         detail,
+        typeInfo: typeInfo || inferTypeFromNode(node)
       })
+    }
+    
+    /**
+     * 从 AST 节点推断类型信息
+     */
+    function inferTypeFromNode(node: ts.Node): string | undefined {
+      // 1. 变量声明：const/let/var
+      if (ts.isVariableDeclaration(node)) {
+        // 有显式类型标注
+        if (node.type) {
+          return node.type.getText(sourceFile)
+        }
+        // 从初始化器推断类型
+        if (node.initializer) {
+          return inferTypeFromExpression(node.initializer)
+        }
+      }
+      
+      // 2. 属性声明
+      if (ts.isPropertyAssignment(node)) {
+        // 从值推断类型
+        return inferTypeFromExpression(node.initializer)
+      }
+      
+      if (ts.isPropertyDeclaration(node) || ts.isPropertySignature(node)) {
+        // 有显式类型标注
+        if (node.type) {
+          return node.type.getText(sourceFile)
+        }
+        // 从初始化器推断（仅 PropertyDeclaration）
+        if (ts.isPropertyDeclaration(node) && node.initializer) {
+          return inferTypeFromExpression(node.initializer)
+        }
+      }
+      
+      // 3. 参数
+      if (ts.isParameter(node)) {
+        if (node.type) {
+          return node.type.getText(sourceFile)
+        }
+      }
+      
+      // 4. 绑定元素（解构）
+      if (ts.isBindingElement(node)) {
+        // 解构时通常没有类型信息，需要从父级推断
+        return undefined
+      }
+      
+      return undefined
+    }
+    
+    /**
+     * 从表达式推断类型
+     */
+    function inferTypeFromExpression(expr: ts.Expression): string | undefined {
+      // 字面量类型
+      if (ts.isStringLiteral(expr)) {
+        return 'string'
+      }
+      if (ts.isNumericLiteral(expr)) {
+        return 'number'
+      }
+      if (expr.kind === ts.SyntaxKind.TrueKeyword || expr.kind === ts.SyntaxKind.FalseKeyword) {
+        return 'boolean'
+      }
+      if (expr.kind === ts.SyntaxKind.NullKeyword) {
+        return 'null'
+      }
+      if (expr.kind === ts.SyntaxKind.UndefinedKeyword) {
+        return 'undefined'
+      }
+      
+      // 数组字面量
+      if (ts.isArrayLiteralExpression(expr)) {
+        if (expr.elements.length > 0) {
+          const firstType = inferTypeFromExpression(expr.elements[0])
+          return firstType ? `${firstType}[]` : 'any[]'
+        }
+        return 'any[]'
+      }
+      
+      // 对象字面量
+      if (ts.isObjectLiteralExpression(expr)) {
+        return 'object'
+      }
+      
+      // 箭头函数/函数表达式
+      if (ts.isArrowFunction(expr) || ts.isFunctionExpression(expr)) {
+        const params = expr.parameters.map(p => {
+          const paramName = p.name.getText(sourceFile)
+          const paramType = p.type ? p.type.getText(sourceFile) : 'any'
+          return `${paramName}: ${paramType}`
+        }).join(', ')
+        const returnType = expr.type ? expr.type.getText(sourceFile) : 'any'
+        return `(${params}) => ${returnType}`
+      }
+      
+      // 调用表达式 - 尝试识别常见的 API
+      if (ts.isCallExpression(expr)) {
+        const callText = expr.expression.getText(sourceFile)
+        
+        // Vue3 响应式 API
+        if (callText === 'ref') {
+          const arg = expr.arguments[0]
+          if (arg) {
+            const argType = inferTypeFromExpression(arg)
+            return argType ? `Ref<${argType}>` : 'Ref<any>'
+          }
+          return 'Ref<any>'
+        }
+        
+        if (callText === 'reactive') {
+          return 'UnwrapRef<object>'
+        }
+        
+        if (callText === 'computed') {
+          return 'ComputedRef<any>'
+        }
+        
+        if (callText === 'toRef') {
+          return 'Ref<any>'
+        }
+        
+        if (callText === 'toRefs') {
+          return 'ToRefs<object>'
+        }
+        
+        // 小程序特殊 API
+        if (callText === 'getCurrentInstance') {
+          return 'ComponentInternalInstance | null'
+        }
+        
+        // 通用函数调用
+        return 'any'
+      }
+      
+      // 其他表达式
+      return undefined
     }
 
     visit(sourceFile)
