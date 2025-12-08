@@ -21,6 +21,7 @@
 - ✨ **动态属性解析**：支持 `Object.assign()`、扩展运算符、函数返回值等动态生成的组件属性
 - 🎯 **智能空格补全**：根据上下文自动识别触发 class 补全或属性补全
 - 💡 **表达式变量补全**：在 `{{ }}` 内自动提示可用变量
+- 🔍 **变量悬停提示**：鼠标移入模板中的 JS 变量时显示其类型定义和位置
 - 🔧 **改进的 AST 解析**：基于 TypeScript AST 的属性解析，支持更复杂的组件定义
 
 详见 [CHANGELOG.md](./CHANGELOG.md) 中的 v2.4.15 版本说明。
@@ -34,6 +35,7 @@
 * [支持classname显示对应的样式定义]
 * [自定义组件动态属性解析（支持 Object.assign、扩展运算符等）](#dynamic-props)
 * [模板表达式变量补全（支持 `{{ }}` 内的变量提示）](#expression-completion)
+* [变量悬停提示：鼠标移入显示变量类型定义](#variable-hover)
 * [一键创建小程序组件](#create-component)
 * [标签名与属性自动补全](#tag-and-attr)
 * [根据组件已有的属性，自动筛选出对应支持的属性集合](#smart-attr)
@@ -106,6 +108,35 @@ Component({
 
 - 支持输入 `{{` 时自动触发补全
 - 支持在表达式内手动触发补全（Ctrl+Space / Cmd+Space）
+
+<a id="variable-hover"></a>
+
+### 变量悬停提示
+
+鼠标移入模板中的 JS 变量时，会自动显示该变量的类型定义和所在位置：
+
+```html
+<view>{{ userName }}</view>
+<!-- 鼠标移入 userName，显示变量定义信息 -->
+
+<view class="{{containerClass}}">
+  <!-- 鼠标移入 containerClass，显示其类型和定义位置 -->
+</view>
+
+<view>{{ user.name }}</view>
+<!-- 支持多级属性访问，显示根变量 user 的定义 -->
+```
+
+**支持场景：**
+- ✅ `{{ }}` 表达式中的变量
+- ✅ 属性值中的变量引用
+- ✅ 多级属性访问（如 `obj.prop.subProp`）
+- ✅ 数组索引访问（如 `list[0]`）
+
+**显示信息：**
+- 📝 变量定义详情（如 `const userName = ""`）
+- 📍 定义所在的文件和行号
+- 🔗 Cmd/Ctrl + Click 可直接跳转到定义处
 
 <a id="create-component"></a>
 
