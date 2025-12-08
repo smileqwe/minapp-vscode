@@ -1,9 +1,9 @@
 {
-  "name": "minapp-vscode",
-  "displayName": "WXML - Language Service",
-  "description": "WXML Language Support",
-  "version": "2.4.16",
-  "publisher": "v_jinlluo",
+  "name": "minapp-vscode-enhanced",
+  "displayName": "WXML - Language Service (Enhanced)",
+  "description": "WXML Language Support with Enhanced Features - Dynamic Props & Smart Completion",
+  "version": "2.4.15",
+  "publisher": "luojin",
   "extensionKind": [
     "workspace"
   ],
@@ -36,14 +36,14 @@
     {
       "name": "v_jinlluo",
       "email": "v_jinlluo@wesure.cn",
-      "url": "https://github.com/iChenLei"
+      "url": "https://github.com/v_jinlluo"
     }
   ],
-  "bugs": "https://github.com/smileqwe/minapp-vscode/issues",
-  "homepage": "https://github.com/smileqwe/minapp-vscode",
+  "bugs": "https://github.com/v_jinlluo/minapp-vscode-enhanced/issues",
+  "homepage": "https://github.com/v_jinlluo/minapp-vscode-enhanced",
   "repository": {
     "type": "git",
-    "url": "https://github.com/smileqwe/minapp-vscode"
+    "url": "https://github.com/v_jinlluo/minapp-vscode-enhanced"
   },
   "engines": {
     "vscode": "^1.59.1"

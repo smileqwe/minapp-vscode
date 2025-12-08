@@ -1,15 +1,30 @@
 <img align="right" width="90px" src="https://funimg.pddpic.com/mobile_piggy/0fe81c13-7691-49ae-bb6e-39586d58a1d7.png.slim.png" alt="wxml language features logo" />
 
-## WXML - Language Service
+## WXML - Language Service (Enhanced)
+
+> **本项目基于 [wx-minapp/minapp-vscode](https://github.com/wx-minapp/minapp-vscode) 进行增强开发**
+> 
+> - 原项目作者：[Mora](https://github.com/qiu8310) & [iChenLei](https://github.com/iChenLei)
+> - 增强版维护：[v_jinlluo](https://github.com/v_jinlluo)
+> - 开源协议：[MIT License](./LICENSE)
+> - 上游项目：https://github.com/wx-minapp/minapp-vscode
+
 [![CI Status](https://github.com/wx-minapp/minapp-vscode/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wx-minapp/minapp-vscode/actions/workflows/ci.yml?query=branch%3Amaster)
 [![Deploy Status](https://github.com/wx-minapp/minapp-vscode/actions/workflows/deploy.yml/badge.svg)](https://github.com/wx-minapp/minapp-vscode/actions/workflows/deploy.yml)
-[![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/qiu8310.minapp-vscode?color=brightgreen&label=Visual%20Studio%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=qiu8310.minapp-vscode)
-![Marketplace Downloads](https://img.shields.io/visual-studio-marketplace/d/qiu8310.minapp-vscode)
-![Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/qiu8310.minapp-vscode)
-![Marketplace Rating](https://img.shields.io/visual-studio-marketplace/r/qiu8310.minapp-vscode)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-### 最近更新 【[CHANGELOG.md](https://github.com/wx-minapp/minapp-vscode/blob/main/CHANGELOG.md)】
-> [@iChenLei](https://github.com/ichenlei) 已接手维护本插件，欢迎大家在钉钉群或者 [Github issues](https://github.com/wx-minapp/minapp-vscode/issues) 提意见。
+### 🎉 增强版特性
+
+本增强版在原版基础上新增以下功能：
+
+- ✨ **动态属性解析**：支持 `Object.assign()`、扩展运算符、函数返回值等动态生成的组件属性
+- 🎯 **智能空格补全**：根据上下文自动识别触发 class 补全或属性补全
+- 💡 **表达式变量补全**：在 `{{ }}` 内自动提示可用变量
+- 🔧 **改进的 AST 解析**：基于 TypeScript AST 的属性解析，支持更复杂的组件定义
+
+详见 [CHANGELOG.md](./CHANGELOG.md) 中的 v2.4.15 版本说明。
+
+### 最近更新 【[CHANGELOG.md](./CHANGELOG.md)】
 
 ### 主要功能
 
@@ -607,3 +622,91 @@ minapp 插件会自动将 .pug 文件关联到 `wxml-pug` 文件类型。所以�
 
 * 非小程序项目中，将 .pug 后缀的文件关联到 `pug` 文件类型
 * 小程序项目中，将 .pug 后缀的文件关联到 `wxml-pug` 文件类型
+
+---
+
+## 🙏 致谢与贡献
+
+### 致谢原项目
+
+本项目基于 [wx-minapp/minapp-vscode](https://github.com/wx-minapp/minapp-vscode) 进行增强开发。
+
+**原项目核心贡献者：**
+- [Mora (qiu8310)](https://github.com/qiu8310) - 原项目创建者
+- [iChenLei](https://github.com/iChenLei) - 项目维护者
+- 以及所有为原项目做出贡献的开发者们
+
+感谢他们创建并维护了这个优秀的小程序开发工具！
+
+### 增强版改进
+
+本增强版由 [v_jinlluo](https://github.com/v_jinlluo) 维护，主要改进包括：
+
+- 基于 TypeScript AST 的动态属性解析
+- 智能上下文补全
+- 模板表达式变量提示
+- 更完善的配置文档
+
+### 参与贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+**贡献指南：**
+
+1. Fork 本项目
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交改动 (`git commit -m 'feat: Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 提交 Pull Request
+
+**提交规范：**
+- `feat:` 新功能
+- `fix:` 修复 bug
+- `docs:` 文档更新
+- `style:` 代码格式调整
+- `refactor:` 重构
+- `test:` 测试相关
+- `chore:` 构建/工具链相关
+
+### 开源协议
+
+本项目采用 [MIT License](./LICENSE) 开源协议。
+
+基于原项目 [wx-minapp/minapp-vscode](https://github.com/wx-minapp/minapp-vscode) 开发，同样遵循 MIT License。
+
+**MIT License 允许：**
+- ✅ 商业使用
+- ✅ 修改
+- ✅ 分发
+- ✅ 私人使用
+
+**要求：**
+- 📄 保留版权和许可声明
+- 📄 说明修改内容
+
+### 联系方式
+
+- 📧 Email: v_jinlluo@wesure.cn
+- 🐛 Issues: [GitHub Issues](https://github.com/v_jinlluo/minapp-vscode-enhanced/issues)
+- 📖 上游项目: [wx-minapp/minapp-vscode](https://github.com/wx-minapp/minapp-vscode)
+
+---
+
+## 📜 版权声明
+
+```
+Original work Copyright (c) 2017-2023 Mora <qiuzhongleiabc@126.com>
+Modified work Copyright (c) 2025 v_jinlluo <v_jinlluo@wesure.cn>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+```
+
+完整协议见 [LICENSE](./LICENSE) 文件。
