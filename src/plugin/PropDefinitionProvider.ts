@@ -15,8 +15,11 @@ export class PropDefinitionProvider implements DefinitionProvider {
     position: Position,
     token: CancellationToken
   ): Promise<Location[]> {
+    console.log('[PropDefinition] provideDefinition 被调用')
     const tag = getTagAtPosition(document, position)
     const locs: Location[] = []
+    
+    console.log('[PropDefinition] tag:', tag ? `存在，name: ${tag.name}, isOnAttrValue: ${tag.isOnAttrValue}, attrName: ${tag.attrName}, posWord: ${tag.posWord}` : '不存在')
 
     if (tag) {
       const language = getLanguage(document, position)
@@ -32,6 +35,9 @@ export class PropDefinitionProvider implements DefinitionProvider {
       const { attrs, attrName, posWord } = tag
       const rawAttrValue = ((attrs['__' + attrName] || '') as string).replace(/^['"]|['"]$/g, '') // 去除引号
 
+      console.log("[PropDefinition] rawAttrValue:", rawAttrValue)
+      console.log("[PropDefinition] 检查条件: attrName.endsWith(\".sync\"):", attrName.endsWith(".sync"))
+      console.log("[PropDefinition] 检查条件: startsWith:", rawAttrValue.startsWith("{{"), "endsWith:", rawAttrValue.endsWith("}}"))
       if (!tag.isOnAttrValue && posWord && language) {
         // 处理属性跳转
         const component = await definitionTagName(tag.name, language, getCustomOptions(this.config, document))
@@ -42,14 +48,76 @@ export class PropDefinitionProvider implements DefinitionProvider {
       }
       // 不在属性上
 
-      if (!tag.isOnAttrValue) return locs
+      if (!tag.isOnAttrValue) {
+        console.log('[PropDefinition] 不在属性值上，返回空')
+        return locs
+      }
 
       // 忽略特殊字符或者以数字开头的单词
-      if (reserveWords.includes(posWord) || /^\d/.test(posWord)) return locs
+      if (reserveWords.includes(posWord) || /^\d/.test(posWord)) {
+        console.log('[PropDefinition] 是保留字或数字开头，返回空')
+        return locs
+      }
+      
+      console.log('[PropDefinition] 开始检查属性类型，attrName:', attrName)
 
       if (attrName.endsWith('class')) {
+        console.log('[PropDefinition] 是 class 属性')
         return this.searchStyle(posWord, document, position)
-      } else if (attrName.endsWith('.sync') || (rawAttrValue.startsWith('{{') && rawAttrValue.endsWith('}}'))) {
+      } else if (attrName.endsWith('.sync') || (rawAttrValue.includes('{{') && rawAttrValue.includes('}}'))) {
+        // 处理 {{ }} 表达式，支持属性访问（包括 style="width:{{...}}" 这种格式）
+        console.log(`[PropDefinition] 检测到 {{ }} 表达式，rawAttrValue: ${rawAttrValue}, posWord: ${posWord}`)
+        
+        // 使用正则提取所有 {{ }} 内的内容
+        const expressionMatches = rawAttrValue.match(/\{\{([^}]*)\}\}/g)
+        console.log(`[PropDefinition] 提取到的表达式: ${expressionMatches}`)
+        
+        if (expressionMatches && expressionMatches.length > 0) {
+          // 取第一个表达式进行处理（通常一个属性值只有一个表达式）
+          const innerExpression = expressionMatches[0].replace(/^\{\{|\}\}$/g, '').trim()
+          console.log(`[PropDefinition] 表达式内容: ${innerExpression}`)
+          
+          // 如果是属性访问表达式（包含点）
+          if (innerExpression.includes('.')) {
+            // 获取光标在属性值中的位置
+            const attrValueRange = document.getWordRangeAtPosition(position, /\{\{[^}]*\}\}/)
+            if (attrValueRange) {
+              const fullText = document.getText(attrValueRange).replace(/^\{\{\s*|\s*\}\}$/g, '')
+              const rangeStart = attrValueRange.start
+              const cursorOffset = document.offsetAt(position) - document.offsetAt(rangeStart) - 2 // 减去 '{{' 的长度
+              
+              console.log(`[PropDefinition] fullText: ${fullText}, cursorOffset: ${cursorOffset}`)
+              
+              // 解析表达式，获取完整属性路径
+              const propertyInfo = this.extractPropertyAtPosition(fullText, cursorOffset, false)
+              console.log(`[PropDefinition] 完整属性路径: ${propertyInfo}`)
+              
+              if (propertyInfo && propertyInfo.includes('.')) {
+                const parts = propertyInfo.split('.')
+                const cursorInExpression = fullText.indexOf(propertyInfo)
+                const relativeOffset = cursorOffset - cursorInExpression
+                
+                // 确定光标在哪个部分
+                let currentOffset = 0
+                for (let i = 0; i < parts.length; i++) {
+                  const part = parts[i]
+                  const partEnd = currentOffset + part.length
+                  
+                  if (relativeOffset >= currentOffset && relativeOffset <= partEnd) {
+                    console.log(`[PropDefinition] 光标在第 ${i} 个部分: ${part}，跳转到根变量: ${parts[0]}`)
+                    // 无论光标在哪个部分，都跳转到根变量
+                    return this.searchScript('prop', parts[0], document)
+                  }
+                  
+                  currentOffset = partEnd + 1 // +1 for the dot
+                }
+              }
+            }
+          }
+        }
+        
+        // 回退到简单变量处理
+        console.log(`[PropDefinition] 回退到简单变量处理: ${posWord}`)
         return this.searchScript('prop', posWord, document)
       } else if (
         /^(mut-bind|capture-catch|capture-bind|bind|catch)/.test(attrName) ||
@@ -77,14 +145,51 @@ export class PropDefinitionProvider implements DefinitionProvider {
       const rangeStart = range.start
       const cursorOffset = document.offsetAt(position) - document.offsetAt(rangeStart) - 2 // 减去 '{{' 的长度
       
-      // 解析表达式，找到光标位置对应的属性
-      const targetProperty = this.extractPropertyAtPosition(fullText, cursorOffset, true)
+      // 解析表达式，获取完整属性路径和光标所在位置
+      const propertyInfo = this.extractPropertyAtPosition(fullText, cursorOffset, false)
       
-      if (targetProperty) {
-        return this.searchScript('prop', targetProperty, document)
+      if (propertyInfo) {
+        console.log(`[PropDefinition] 完整属性路径: ${propertyInfo}, 光标位置: ${cursorOffset}`)
+        
+        // 如果是属性访问（包含点），尝试智能跳转
+        if (propertyInfo.includes('.')) {
+          const parts = propertyInfo.split('.')
+          const cursorInExpression = fullText.indexOf(propertyInfo)
+          const relativeOffset = cursorOffset - cursorInExpression
+          
+          // 确定光标在哪个部分
+          let currentOffset = 0
+          for (let i = 0; i < parts.length; i++) {
+            const part = parts[i]
+            const partEnd = currentOffset + part.length
+            
+            if (relativeOffset >= currentOffset && relativeOffset <= partEnd) {
+              console.log(`[PropDefinition] 光标在第 ${i} 个部分: ${part}`)
+              // 如果光标在第一个部分（根变量），跳转到根变量
+              if (i === 0) {
+                return this.searchScript('prop', part, document)
+              }
+              // 如果光标在后续属性上，目前只跳转到根变量
+              // TODO: 未来可以通过类型推断跳转到具体属性定义
+              console.log(`[PropDefinition] 光标在属性 ${part} 上，跳转到根变量 ${parts[0]}`)
+              return this.searchScript('prop', parts[0], document)
+            }
+            
+            currentOffset = partEnd + 1 // +1 for the dot
+          }
+        }
+        
+        // 简单变量，直接跳转
+        return this.searchScript('prop', propertyInfo, document)
       }
       
-      // 如果无法精确定位，回退到原来的逻辑
+      // 如果无法精确定位，尝试提取根变量
+      const rootVariable = this.extractPropertyAtPosition(fullText, cursorOffset, true)
+      if (rootVariable) {
+        return this.searchScript('prop', rootVariable, document)
+      }
+      
+      // 最后回退到原来的逻辑
       return this.searchScript('prop', fullText, document)
     }
     return locs
@@ -94,10 +199,11 @@ export class PropDefinitionProvider implements DefinitionProvider {
     return getProp(doc.fileName, type, word).map(p => p.loc)
   }
 
-  searchStyle(className: string, document: TextDocument, position: Position): Location[] {
+  async searchStyle(className: string, document: TextDocument, position: Position): Promise<Location[]> {
     const locs: Location[] = []
 
-    getClass(document, this.config).forEach(styfile => {
+    const styleFiles = await getClass(document, this.config)
+    styleFiles.forEach(styfile => {
       styfile.styles.forEach(sty => {
         if (sty.name === className) {
           const start = sty.pos
@@ -125,7 +231,8 @@ export class PropDefinitionProvider implements DefinitionProvider {
        return null
      }
      
-     // 使用正则表达式找到所有可能的属性引用
+     // 使用正则表达式找到所有可能的属性引用（支持多级属性访问）
+     // 匹配：identifier, identifier.property, identifier.property.subProperty 等
      const propertyRegex = /[a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)*/g
      let match
      
@@ -136,17 +243,22 @@ export class PropDefinitionProvider implements DefinitionProvider {
        // 检查光标是否在这个属性范围内
        if (adjustedOffset >= start && adjustedOffset <= end) {
          const fullProperty = match[0]
+         console.log(`[extractPropertyAtPosition] 找到属性: ${fullProperty}, 范围: [${start}, ${end}], 光标: ${adjustedOffset}`)
          
          if (extractRootVariable) {
            // 提取根变量：从 a.b.c 中提取 a
            const rootVariable = fullProperty.split('.')[0]
+           console.log(`[extractPropertyAtPosition] 提取根变量: ${rootVariable}`)
            return rootVariable
          } else {
            // 返回完整的属性路径
+           console.log(`[extractPropertyAtPosition] 返回完整路径: ${fullProperty}`)
            return fullProperty
          }
        }
      }
+     
+     console.log(`[extractPropertyAtPosition] 未找到精确匹配，尝试查找最近的单词`)
      
      // 如果没有找到精确匹配，尝试找到光标附近的单词
      const wordRegex = /[a-zA-Z_$][a-zA-Z0-9_$]*/g
@@ -167,6 +279,7 @@ export class PropDefinitionProvider implements DefinitionProvider {
        }
      }
      
+     console.log(`[extractPropertyAtPosition] 最近的单词: ${closestMatch}`)
      return closestMatch
    }
    

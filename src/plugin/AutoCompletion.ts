@@ -308,7 +308,7 @@ export default abstract class AutoCompletion {
   // 样式名自动补全
   async autoCompleteClassNames(doc: TextDocument, existsClassNames: string[]): Promise<CompletionItem[]> {
     const items: CompletionItem[] = []
-    const stylefiles = getClass(doc, this.config)
+    const stylefiles = await getClass(doc, this.config)
     const root = getRoot(doc)
     const cache: Record<string, CompletionItem> = {}
     stylefiles.forEach((stylefile, sfi) => {
@@ -416,6 +416,32 @@ export default abstract class AutoCompletion {
       } else {
         c.sortText = l.name.replace('_', '{')
       }
+      return c
+    })
+  }
+
+  /**
+   * 变量和属性自动提示（用于 {{ }} 表达式中）
+   * @param doc
+   * @param prefix 变量前缀，空则查找所有变量
+   */
+  autoCompleteProps(doc: TextDocument, prefix: string): CompletionItem[] {
+    // 去掉前后空格和换行
+    const cleanPrefix = (prefix || '').trim()
+    console.log(`[autoCompleteProps] 开始查找变量，prefix: "${cleanPrefix}"`)
+    // 使用单层转义，因为这里是字符串字面量，传递给 RegExp 后会正确解析
+    const pattern = (cleanPrefix || '[\\w_$]') + '[\\w\\d_$]*'
+    console.log(`[autoCompleteProps] 正则模式: ${pattern}`)
+    const props = getProp(doc.uri.fsPath, 'prop', pattern)
+    const root = getRoot(doc)
+    console.log(`[autoCompleteProps] 找到 ${props.length} 个变量`)
+    
+    return props.map(l => {
+      const c = new CompletionItem(l.name, CompletionItemKind.Variable)
+      const filePath = root ? path.relative(root, l.loc.uri.fsPath) : path.basename(l.loc.uri.fsPath)
+      c.detail = `${filePath}\\n[${l.loc.range.start.line}行,${l.loc.range.start.character}列]`
+      c.documentation = new MarkdownString('```ts\\n' + l.detail + '\\n```')
+      c.sortText = l.name.replace('_', '{') // 下划线开头的排后面
       return c
     })
   }

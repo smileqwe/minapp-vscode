@@ -14,8 +14,10 @@
 ### 主要功能
 
 * [支持样式文件@import引入]
-* [支持空格触发class补全]
+* [智能空格补全：自动识别上下文触发 class 或属性补全](#smart-space)
 * [支持classname显示对应的样式定义]
+* [自定义组件动态属性解析（支持 Object.assign、扩展运算符等）](#dynamic-props)
+* [模板表达式变量补全（支持 `{{ }}` 内的变量提示）](#expression-completion)
 * [一键创建小程序组件](#create-component)
 * [标签名与属性自动补全](#tag-and-attr)
 * [根据组件已有的属性，自动筛选出对应支持的属性集合](#smart-attr)
@@ -31,6 +33,64 @@
 * [wxml 格式化](#wxml-formatter)
 
 > **所有自动补全的模板数据都来自于官方文档，通过[脚本](https://github.com/wx-minapp/minapp-generator)自动获取的**
+
+<a id="smart-space"></a>
+
+### 智能空格补全
+
+插件会根据光标所在的上下文智能判断应该触发哪种补全：
+
+- **在 `class` 属性值内按空格**：触发 CSS class 名称补全（从样式文件中读取）
+- **在标签内其他位置按空格**：触发组件属性补全（包括自定义组件的 properties）
+
+```html
+<!-- 场景 1：class 属性值内 -->
+<view class="container ">
+<!-- 按空格，提示 CSS class 名称 -->
+
+<!-- 场景 2：标签内其他位置 -->
+<popup >
+<!-- 按空格，提示组件的所有属性 -->
+```
+
+<a id="dynamic-props"></a>
+
+### 自定义组件动态属性解析
+
+插件支持解析通过动态方式生成的组件属性，包括：
+
+- **`Object.assign()` 合并的属性**
+- **扩展运算符 `...` 展开的属性**
+- **函数返回值属性（同文件内）**
+
+```javascript
+// 组件定义示例
+Component({
+  properties: Object.assign(
+    {},
+    generateTrackProps(),           // 函数返回的属性
+    { customProp: String }          // 直接定义的属性
+  )
+})
+```
+
+现在在 wxml 中使用该组件时，插件会自动提示所有动态生成的属性。
+
+**注意**：跨文件的函数调用属性暂不支持解析。
+
+<a id="expression-completion"></a>
+
+### 模板表达式变量补全
+
+在模板的 `{{ }}` 表达式内输入时，插件会自动提示可用的变量：
+
+```html
+<view>{{ | }}</view>
+<!-- 自动提示 data、computed、methods 等中的变量 -->
+```
+
+- 支持输入 `{{` 时自动触发补全
+- 支持在表达式内手动触发补全（Ctrl+Space / Cmd+Space）
 
 <a id="create-component"></a>
 
@@ -242,6 +302,297 @@ vue 中的 template 板支持两个属性：
   2. 切换格式化工具需重启 VSCode
   3. 针对 `prettyHtml` ，和 `prettier` 采用 HTML5 的语法和 wxml 不完全一致，写法要注意兼容
   4. 针对 `jsBeautifyHtml` , 当值为 `"useCodeBuiltInHTML"`时, 配置信息将从 vscode 配置中的 `html.format.*` 配置字段[doc](https://code.visualstudio.com/docs/languages/html#_formatting) 读取, 转换为 [js-beautify](https://github.com/beautify-web/js-beautify#css--html) 的配置
+
+---
+
+## 📝 完整配置项说明
+
+### 基础配置
+
+```jsonc
+{
+  // 项目根目录配置（绝对路径）
+  "minapp-vscode.rootPath": "/Users/username/project",  // 项目真正的根目录（绝对路径）
+  
+  // 组件创建相关
+  "minapp-vscode.cssExtname": "wxss",      // CSS 文件扩展名，默认 wxss，支持 styl/sass/scss/less/css
+  "minapp-vscode.wxmlExtname": "wxml",     // WXML 文件扩展名，默认 wxml，支持 vue/wpy
+  "minapp-vscode.jsExtname": "js",         // JS 文件扩展名，默认 js，支持 ts/coffee
+}
+```
+
+**`rootPath` 详细说明：**
+
+当你不是在项目根目录打开 VSCode 时（比如打开的是子目录），需要配置 `rootPath` 告诉插件真正的项目根目录位置。**必须使用绝对路径。**
+
+**使用场景：**
+
+```bash
+# 场景 1：在子目录中打开 VSCode
+your-project/
+  ├── package.json          # 项目根目录在这里
+  ├── src/
+  │   └── miniapp/         # 你在这里打开 VSCode
+  │       ├── pages/
+  │       └── components/
+
+# 配置：.vscode/settings.json
+{
+  "minapp-vscode.rootPath": "/Users/username/your-project"  # 绝对路径指向项目根目录
+}
+
+# 场景 2：monorepo 项目
+monorepo/
+  ├── package.json          # monorepo 根目录
+  ├── packages/
+  │   ├── miniapp/         # 小程序子包，你在这里打开
+  │   │   ├── package.json
+  │   │   └── src/
+  │   └── components/
+
+# 配置：packages/miniapp/.vscode/settings.json
+{
+  "minapp-vscode.rootPath": "/Users/username/monorepo",      # 绝对路径指向 monorepo 根目录
+  "minapp-vscode.resolveRoots": [
+    "packages/miniapp/src",
+    "packages/components"
+  ]
+}
+
+# 场景 3：多个小程序在同一个仓库
+project/
+  ├── miniapp-a/           # 小程序 A，你在这里打开
+  │   ├── pages/
+  │   └── app.json
+  ├── miniapp-b/
+  └── shared/
+
+# 配置：miniapp-a/.vscode/settings.json
+{
+  "minapp-vscode.rootPath": "/Users/username/project",       # 绝对路径指向父目录
+  "minapp-vscode.resolveRoots": [
+    "miniapp-a",
+    "shared"
+  ]
+}
+
+# Windows 系统示例
+{
+  "minapp-vscode.rootPath": "C:\\Users\\username\\project"   # Windows 使用反斜杠或正斜杠均可
+}
+```
+
+**注意事项：**
+- ⚠️ **必须使用绝对路径**，不支持相对路径
+- 配置 `rootPath` 后，`resolveRoots` 和 `globalStyleFiles` 等路径都相对于 `rootPath` 解析
+- 如果在项目根目录打开，无需配置此项
+- 推荐在项目的 `.vscode/settings.json` 中配置，避免影响其他项目
+- 团队协作时，建议将此配置放在用户级设置，因为每个人的绝对路径可能不同
+
+### 样式相关配置
+
+```jsonc
+{
+  // 全局样式文件路径（用于 class 补全）
+  "minapp-vscode.globalStyleFiles": [
+    "src/app.wxss",                        // 小程序全局样式文件
+    "src/common/styles/global.wxss"        // 其他全局样式
+  ],
+  
+  // 样式文件扩展名（建议配置以优化性能）
+  "minapp-vscode.styleExtensions": [
+    "wxss",
+    "scss",
+    "less"
+  ]
+}
+```
+
+### 自定义组件配置
+
+```jsonc
+{
+  // 解析自定义组件的根目录（相对于项目根目录）
+  // 用于解析自定义组件路径和静态资源路径
+  "minapp-vscode.resolveRoots": [
+    "src",                                 // 源码目录
+    "components",                          // 组件目录
+    "miniprogram"                          // 小程序根目录
+  ],
+  
+  // 禁用基础属性的组件列表
+  "minapp-vscode.noBasicAttrsComponents": [
+    "custom-component"
+  ]
+}
+```
+
+**`resolveRoots` 详细说明：**
+
+`resolveRoots` 用于配置路径解析的根目录，影响以下功能：
+
+1. **自定义组件路径解析**
+   ```json
+   // app.json 或 page.json
+   {
+     "usingComponents": {
+       "my-component": "/components/my-component"
+     }
+   }
+   ```
+   插件会在 `resolveRoots` 配置的目录中查找 `/components/my-component`
+
+2. **静态资源路径解析（link 功能）**
+   ```html
+   <image src="/images/logo.png" />
+   ```
+   插件会在 `resolveRoots` 配置的目录中查找 `/images/logo.png`
+
+3. **样式文件路径解析**
+   ```css
+   @import "/common/styles/base.wxss";
+   ```
+   插件会在 `resolveRoots` 配置的目录中查找样式文件
+
+**配置示例：**
+
+```jsonc
+// 场景 1：标准小程序项目结构
+{
+  "minapp-vscode.resolveRoots": ["src"]
+}
+// 项目结构：
+// src/
+//   ├── pages/
+//   ├── components/
+//   └── images/
+
+// 场景 2：Taro/uni-app 等框架
+{
+  "minapp-vscode.resolveRoots": ["src", "dist"]
+}
+// src/ 是源码目录，dist/ 是编译输出目录
+
+// 场景 3：多包项目（如使用 pnpm workspace）
+{
+  "minapp-vscode.resolveRoots": [
+    "packages/main/src",
+    "packages/components/src",
+    "packages/shared"
+  ]
+}
+
+// 场景 4：monorepo 项目
+{
+  "minapp-vscode.resolveRoots": [
+    "apps/miniapp/src",
+    "packages/ui/src",
+    "packages/utils"
+  ]
+}
+```
+
+**注意事项：**
+- 路径相对于项目根目录（workspace root）
+- 支持配置多个根目录，插件会依次查找
+- 如果不配置，默认只在项目根目录查找
+- 合理配置可以显著提升组件和资源的识别准确性
+
+### Link 功能配置
+
+```jsonc
+{
+  // 支持 link 的属性名列表（设为空数组可禁用 link 功能）
+  "minapp-vscode.linkAttributeNames": [
+    "src",
+    "image",
+    "icon"
+  ]
+}
+```
+
+### 变量高亮配置
+
+```jsonc
+{
+  // 是否禁用变量高亮装饰（true 为禁用，false 为启用）
+  "minapp-vscode.disableDecorate": true,
+  
+  // 装饰样式配置
+  "minapp-vscode.decorateType": {
+    "color": "#e673a8",                    // 自定义颜色
+    "fontWeight": "bold"                   // 可选：bold
+  },
+  
+  // 是否高亮复杂表达式（false 时只高亮变量，不高亮表达式）
+  "minapp-vscode.decorateComplexInterpolation": true
+}
+```
+
+### Snippets 配置
+
+```jsonc
+{
+  // 自定义代码片段
+  "minapp-vscode.snippets": {
+    "my-custom-view": "<view class=\"custom\">$1</view>$0",
+    "my-button": "<button type=\"primary\" bindtap=\"$1\">$2</button>$0"
+  }
+}
+```
+
+### 完整配置示例
+
+```jsonc
+{
+  // === 项目根目录（非根目录打开时配置，使用绝对路径） ===
+  "minapp-vscode.rootPath": "/Users/username/project",       // 指向真正的项目根目录（绝对路径）
+  
+  // === 组件创建 ===
+  "minapp-vscode.cssExtname": "scss",
+  "minapp-vscode.wxmlExtname": "wxml",
+  "minapp-vscode.jsExtname": "ts",
+  
+  // === 格式化 ===
+  "minapp-vscode.wxmlFormatter": "prettier",
+  "minapp-vscode.prettier": {
+    "tabWidth": 2,
+    "singleQuote": true,
+    "printWidth": 120
+  },
+  
+  // === 样式补全 ===
+  "minapp-vscode.globalStyleFiles": ["src/app.wxss"],
+  "minapp-vscode.styleExtensions": ["wxss", "scss"],
+  
+  // === 组件解析 ===
+  "minapp-vscode.resolveRoots": ["src", "components"],  // 配置路径解析根目录，支持多个
+  
+  // === 变量高亮 ===
+  "minapp-vscode.disableDecorate": false,
+  "minapp-vscode.decorateType": {
+    "color": "#e673a8"
+  },
+  
+  // === Link ===
+  "minapp-vscode.linkAttributeNames": ["src", "image"],
+  
+  // === 自定义 Snippets ===
+  "minapp-vscode.snippets": {
+    "view-container": "<view class=\"container\">$1</view>$0"
+  }
+}
+```
+
+### 配置优先级
+
+1. **项目级配置** (`.vscode/settings.json`) - 优先级最高
+2. **用户级配置** (VSCode Settings) - 全局配置
+3. **默认配置** - 插件内置默认值
+
+建议将项目特定的配置（如 `globalStyleFiles`、`resolveRoots`）放在项目级配置中。
+
+---
 
 ### 常见问题
 

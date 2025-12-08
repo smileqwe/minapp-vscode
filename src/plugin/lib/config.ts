@@ -147,12 +147,25 @@ function getConfig() {
 
 function getResolveRoots(doc: vscode.TextDocument): string[] {
   const root = vscode.workspace.getWorkspaceFolder(doc.uri) as vscode.WorkspaceFolder
+  if (!root) return []
+  
   let roots = config.resolveRoots
+  const workspaceRoot = root.uri.fsPath
+  
+  // 如果配置了 rootPath，使用它作为项目根目录
+  const projectRoot = config.rootPath ? path.resolve(workspaceRoot, config.rootPath) : workspaceRoot
+  
   if (config.rootPath) {
     // console.log(config, roots.map(r => path.resolve(config.rootPath, r)))
     roots = [...roots, ...roots.map(r => config.rootPath+ '/'+  r)]
   }
-  return root ? roots.map(r => path.resolve(root.uri.fsPath, r)) : []
+  
+  // 解析所有配置的根目录
+  const resolvedRoots = roots.map(r => path.resolve(workspaceRoot, r))
+  
+  // 将项目根目录添加到第一位，这样 /components/xxx 这样的绝对路径就能正确解析
+  // 去重，避免重复添加
+  return [projectRoot, ...resolvedRoots.filter(r => r !== projectRoot)]
 }
 
 export function configActivate(): void {

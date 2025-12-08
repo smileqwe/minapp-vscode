@@ -5,7 +5,7 @@ const COMMENT_REGEXP = /<!--([\s\S]*?)-->/g
 const DOUBLE_BIND_REGEXP = /\b(?:[\w-]+).sync\s*=\s*['"]([^'"]*)['"]/g
 // pug 语言属性前可能是 "("
 const DIRECTIVE_REGEXP = /(?:\s|\()(?:v-|bind:?|catch:?|wx:|:|@)[\w-]+(?:\.[\w-]+)?\s*=\s*['"]([^'"]*)['"]/g
-const INTERPOLATION_SIMPLE_REGEXP = /\{\{\s*([\w.-\[\]]*)\s*\}\}/g // 可以匹配 a、a.b、a[1].b 等
+const INTERPOLATION_SIMPLE_REGEXP = /\{\{\s*([\w.-[\]]*)\s*\}\}/g // 可以匹配 a、a.b、a[1].b 等
 const INTERPOLATION_COMPLEX_REGEXP = /\{\{\s*(.*?)\s*\}\}/g
 
 export default class ActiveTextEditorListener {
@@ -16,7 +16,7 @@ export default class ActiveTextEditorListener {
     // 首次立即更新，文件变化延迟更新
     if (window.activeTextEditor) this.onChange(window.activeTextEditor)
 
-    let tid: NodeJS.Timer
+    let tid: NodeJS.Timeout
     const update = (editor: TextEditor, resetCache?: boolean) => {
       if (!editor) return
       if (tid) clearTimeout(tid)

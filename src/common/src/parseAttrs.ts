@@ -29,8 +29,11 @@ const DOC_REGEXP = /\/\*\*([\s\S]*?)\*\/[\s\n\r]*(\w+)\s*:/g
 const TYPE_REGEXP = /^function\s+(\w+)\(/
 
 export function parseAttrs(content: string): ComponentAttr[] {
+  console.log(`[parseAttrs] 开始解析，内容长度: ${content.length}`)
+  
   let attrs: ComponentAttr[] | undefined
   if (SINGLE_LINE_REGEXP.test(content)) {
+    console.log(`[parseAttrs] 匹配到单行格式`)
     attrs = parseObjStr(RegExp.$1)
   }
 
@@ -44,14 +47,21 @@ export function parseAttrs(content: string): ComponentAttr[] {
         if (l.trimRight() === spaces + '}') flag = 2
         else objstr += '\n' + l
       } else if (MULTIPLE_LINE_START_REGEXP.test(l)) {
+        console.log(`[parseAttrs] 匹配到多行格式起始: ${l.substring(0, 100)}`)
         flag = 1
         spaces = RegExp.$1
         objstr += RegExp.$2
       }
     })
-    if (flag === 2) attrs = parseObjStr(objstr)
+    if (flag === 2) {
+      console.log(`[parseAttrs] 多行格式解析完成`)
+      attrs = parseObjStr(objstr)
+    } else {
+      console.log(`[parseAttrs] 未找到匹配的 properties 格式（flag=${flag}）`)
+    }
   }
 
+  console.log(`[parseAttrs] 解析结果: ${attrs ? attrs.length : 0} 个属性`)
   return attrs || []
 }
 

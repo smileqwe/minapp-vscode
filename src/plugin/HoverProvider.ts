@@ -24,7 +24,9 @@ export default class implements HoverProvider {
     if (!tag) return null
     // 处理class悬停
     if (tag.isOnAttrValue && (tag.attrName === 'class' || /^[\w\d-]+-class/.test(tag.attrName)) ) {
-      const mk = classHover(document, tag.posWord)
+      // 获取当前元素的所有 class
+      const allClasses = tag.attrs.class ? String(tag.attrs.class).split(/\s+/).filter(c => c) : []
+      const mk = await classHover(document, tag.posWord, allClasses)
       return mk ? new Hover(mk) : null  
     }
 

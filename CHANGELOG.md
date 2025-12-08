@@ -1,3 +1,34 @@
+2.4.15 / 2025-12-08
+==================
+
+### ✨ 新增功能
+
+* **自定义组件动态属性解析**
+  - 新增基于 TypeScript AST 的属性解析器
+  - 支持 `Object.assign()` 合并的动态属性
+  - 支持扩展运算符 `...` 展开的属性
+  - 支持函数返回值属性（同文件内）
+
+* **智能空格补全**
+  - 在 `class` 属性值内按空格：触发 CSS class 名称补全
+  - 在标签内其他位置按空格：触发组件属性补全
+  - 自动识别上下文，智能分发补全类型
+
+* **模板表达式变量补全**
+  - 支持 `{{ }}` 表达式内的变量自动补全
+  - 提示 `data`、`computed`、`methods` 等可用变量
+
+### 🔧 技术改进
+
+* 新增 `src/common/src/parseAttrsAST.ts` AST 解析器
+* 优化 `src/plugin/WxmlAutoCompletion.ts` 补全触发逻辑
+* 改进 `src/plugin/lib/ScriptFile.ts` 属性提取算法
+* 支持识别编译后的组件定义格式
+
+### ⚠️ 已知限制
+
+* 跨文件的函数调用属性暂不支持解析
+
 2.4.14 / 2024-11-23
 ==================
 * fix: prettier.format异步接口兼容支持 [#185](https://github.com/wx-minapp/minapp-vscode/pull/185)
