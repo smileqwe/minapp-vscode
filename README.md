@@ -5,9 +5,10 @@
 > **本项目基于 [wx-minapp/minapp-vscode](https://github.com/wx-minapp/minapp-vscode) 进行增强开发**
 > 
 > - 原项目作者：[Mora](https://github.com/qiu8310) & [iChenLei](https://github.com/iChenLei)
-> - 增强版维护：[v_jinlluo](https://github.com/v_jinlluo)
+> - 增强版维护：[smileqwe](https://github.com/smileqwe)
 > - 开源协议：[MIT License](./LICENSE)
 > - 上游项目：https://github.com/wx-minapp/minapp-vscode
+> - 增强版地址：https://github.com/smileqwe/minapp-vscode
 
 [![CI Status](https://github.com/wx-minapp/minapp-vscode/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wx-minapp/minapp-vscode/actions/workflows/ci.yml?query=branch%3Amaster)
 [![Deploy Status](https://github.com/wx-minapp/minapp-vscode/actions/workflows/deploy.yml/badge.svg)](https://github.com/wx-minapp/minapp-vscode/actions/workflows/deploy.yml)
@@ -37,12 +38,11 @@
 * [标签名与属性自动补全](#tag-and-attr)
 * [根据组件已有的属性，自动筛选出对应支持的属性集合](#smart-attr)
 * [属性值自动补全](#attr-value)
-* [点击模板文件中的函数或属性跳转到 js/ts 定义的地方（纯 wxml 或 pug 文件才支持，vue 文件不完全支持）](#attr-definition)
-* [样式名自动补全（纯 wxml 或 pug 文件才支持，vue 文件不完全支持）](#attr-class-value)
-* [在 vue 模板文件中也能自动补全，同时支持 pug 语言](#vue)
-* [支持 link（纯 wxml 或 pug 文件才支持，vue 文件不支持）](#link)
-* [自定义组件自动补全（纯 wxml 文件才支持，vue 或 pug 文件不支持）](#custom-component)
-* [模板文件中 js 变量高亮（纯 wxml 或 pug 文件才支持，vue 文件不支持）](#highlight)
+* [点击模板文件中的函数或属性跳转到 js/ts 定义的地方](#attr-definition)
+* [样式名自动补全](#attr-class-value)
+* [支持 link](#link)
+* [自定义组件自动补全](#custom-component)
+* [模板文件中 js 变量高亮](#highlight)
 * [内置 snippets](#snippets)
 * [支持 emmet 写法](#emmet)
 * [wxml 格式化](#wxml-formatter)
@@ -116,15 +116,15 @@ Component({
 
 ![示例图片](https://funimg.pddpic.com/mobile_piggy/958baa82-f263-402f-8887-b1eaabffbc7c.gif)
 
-* 创建组件支持配置 css/wxml/js 后缀，比如项目使用 less/vue/ts
+* 创建组件支持配置 css/wxml/js 后缀，比如项目使用 less/ts
 
 ![示例图片](https://funimg.pddpic.com/mobile_piggy/a4af85c2-d4cb-44f2-aa47-831b80b20c7a.gif)
 
 ```jsonc
 {
   "minapp-vscode.cssExtname": "less", // 默认 wxss，支持 styl sass scss less css
-  "minapp-vscode.wxmlExtname": "vue", // 默认 wxml，支持 vue wpy
-  "minapp-vscode.jsExtname": "ts" // 默认 js，支持 ts coffee
+  "minapp-vscode.wxmlExtname": "wxml", // 默认 wxml
+  "minapp-vscode.jsExtname": "ts" // 默认 js，支持 ts
 }
 ```
 
@@ -133,7 +133,7 @@ Component({
 
 ### 标签名与属性名自动补全
 
-* wxml 中需要输入 `<` 才会触发标签补全，而 pug 语言只需要写标签开头即能触发标签补全
+* wxml 中需要输入 `<` 才会触发标签补全
 * 输入空格会触发对应标签的属性补全
 
 ![示例图片](https://n1image.hjfile.cn/res7/2018/03/01/13631761451ae134c6eb3ea2ed1a6a12.gif)
@@ -158,7 +158,7 @@ Component({
 
 <a id="attr-definition"></a>
 
-### 点击模板文件中的函数或属性跳转到 js/ts 定义的地方（纯 wxml 或 pug 文件才支持，vue 文件不完全支持）
+### 点击模板文件中的函数或属性跳转到 js/ts 定义的地方
 
 **功能还不完善，只会查找和当前模板同名的脚本文件，所以有可能会找不到 JS 中的定义**
 
@@ -166,13 +166,13 @@ Component({
 
 <a id="attr-class-value"></a>
 
-### 样式名自动补全（纯 wxml 或 pug 文件才支持，vue 文件不完全支持）
+### 样式名自动补全
 
 系统会自动获取和当前模板同名的样式文件中的所有样式名，同时还能获取样式名上的 `/** */` 中的文档；如果有全局的样式，需要通过配置项 `minapp-vscode.globalStyleFiles` 来指定。
 
 - 默认会获取和当前模板同名的样式文件中的名称
 
-  **注意：如果样式文件是 `@import` 了另一个样式文件，则程序不会去获取这个引入的文件中的样式名**
+  **注意：支持样式文件是 `@import` 了另一个样式文件，则程序会去获取这个引入的文件中的样式名**
 
 - 另外可以使用 `minapp-vscode.globalStyleFiles` 来指定一些全局的样式文件，这样在输入 `class=""` 后就也会出现这些文件中的样式名
 
@@ -186,16 +186,9 @@ Component({
 
 ![示例图片](https://n1image.hjfile.cn/res7/2018/11/15/559184bb3ff7cc2fb76c204010f6f042.gif)
 
-<a id="vue"></a>
+<a id="link"></a>
 
-### 在 vue 模板文件中也能自动补全，同时支持 pug 语言
-
-vue 中的 template 板支持两个属性：
-
-1. `lang` 可以设置为 `"wxml"` 或 `"pug"`，表示使用的语言（**在类 vue 框架中指定 `lang` 属性可能会导致编译报错，你可以使用 `xlang` 替代，但这样会同时出现 vue 和 minapp 的补全**）
-2. `minapp` 可以设置为 `"native"`, `"wepy"`，`"mpx"` 或 `"mpvue"`，表示使用的框架，默认为 `"mpvue"`
-
-如:
+### 支持 link
 
 * `<template lang="wxml" minapp="native">`   表示使用 wxml 语言，不使用任何框架
 * `<template lang="pug" minapp="mpvue">`     表示使用 pug 语言，并使用 mpvue 框架
@@ -219,7 +212,7 @@ vue 中的 template 板支持两个属性：
 
 <a id="custom-component"></a>
 
-### 自定义组件自动补全（纯 wxml 文件才支持，vue 或 pug 文件不支持）
+### 自定义组件自动补全
 
 - 自动获取对应 json 文件中的组件信息
 - 优先提示自定义组件
@@ -229,7 +222,7 @@ vue 中的 template 板支持两个属性：
 
 <a id="highlight"></a>
 
-### 模板文件中 js 变量高亮（纯 wxml 或 pug 文件才支持，vue 文件不支持）
+### 模板文件中 js 变量高亮
 
 - 默认关闭高亮，可以配置 `minapp-vscode.disableDecorate` 为 `true` 来开启高亮
 - 默认高亮颜色使用紫色，可以配置 `minapp-vscode.decorateType` 来使用你喜欢的颜色，如 `{"color": "red"}`
@@ -238,10 +231,6 @@ vue 中的 template 板支持两个属性：
 ![示例图片](https://n1image.hjfile.cn/res7/2018/05/07/c6dd2e8613fbb02417029fb3dbd302ce.png)
 
 **为了加快解析速度，颜色高亮使用的是正则表达式匹配，所以可能会出现匹配错误的情况；如果不满意，可以配置 `minapp-vscode.disableDecorate` 来禁用颜色高亮功能**
-
-**已知问题：**
-
-- pug 语言中注释中的变量也会高亮 （pug 是基于缩进的，正则不太好处理）
 
 <a id="snippets"></a>
 
@@ -331,8 +320,8 @@ vue 中的 template 板支持两个属性：
   
   // 组件创建相关
   "minapp-vscode.cssExtname": "wxss",      // CSS 文件扩展名，默认 wxss，支持 styl/sass/scss/less/css
-  "minapp-vscode.wxmlExtname": "wxml",     // WXML 文件扩展名，默认 wxml，支持 vue/wpy
-  "minapp-vscode.jsExtname": "js",         // JS 文件扩展名，默认 js，支持 ts/coffee
+  "minapp-vscode.wxmlExtname": "wxml",     // WXML 文件扩展名，默认 wxml
+  "minapp-vscode.jsExtname": "js",         // JS 文件扩展名，默认 js，支持 ts
 }
 ```
 
@@ -614,14 +603,7 @@ project/
 #### 安装插件后没有出现自动补全
 
 1. 确保安装后有重启过 VSCode
-2. 确保当前文件的格式是 wxml 或 wxml-pug 或 vue (不能看文件后缀名，因为可能在配置文件中把它们关联的其它文件格式；需要看 vscode 右下角显示的文件类型)
-
-#### 在非小程序项目，pug 文件不想要小程序的自动补全
-
-minapp 插件会自动将 .pug 文件关联到 `wxml-pug` 文件类型。所以你只需要在具体的项目中配置一下文件关联就行了。
-
-* 非小程序项目中，将 .pug 后缀的文件关联到 `pug` 文件类型
-* 小程序项目中，将 .pug 后缀的文件关联到 `wxml-pug` 文件类型
+2. 确保当前文件的格式是 wxml (不能看文件后缀名，因为可能在配置文件中把它们关联的其它文件格式；需要看 vscode 右下角显示的文件类型)
 
 ---
 
@@ -640,7 +622,7 @@ minapp 插件会自动将 .pug 文件关联到 `wxml-pug` 文件类型。所以�
 
 ### 增强版改进
 
-本增强版由 [v_jinlluo](https://github.com/v_jinlluo) 维护，主要改进包括：
+本增强版由 [smileqwe](https://github.com/smileqwe) 维护，主要改进包括：
 
 - 基于 TypeScript AST 的动态属性解析
 - 智能上下文补全
@@ -686,9 +668,9 @@ minapp 插件会自动将 .pug 文件关联到 `wxml-pug` 文件类型。所以�
 
 ### 联系方式
 
-- 📧 Email: v_jinlluo@wesure.cn
-- 🐛 Issues: [GitHub Issues](https://github.com/v_jinlluo/minapp-vscode-enhanced/issues)
+- 🐛 Issues: [GitHub Issues](https://github.com/smileqwe/minapp-vscode/issues)
 - 📖 上游项目: [wx-minapp/minapp-vscode](https://github.com/wx-minapp/minapp-vscode)
+- 📖 增强版仓库: [smileqwe/minapp-vscode](https://github.com/smileqwe/minapp-vscode)
 
 ---
 
@@ -696,7 +678,7 @@ minapp 插件会自动将 .pug 文件关联到 `wxml-pug` 文件类型。所以�
 
 ```
 Original work Copyright (c) 2017-2023 Mora <qiuzhongleiabc@126.com>
-Modified work Copyright (c) 2025 v_jinlluo <v_jinlluo@wesure.cn>
+Modified work Copyright (c) 2025 smileqwe
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

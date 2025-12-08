@@ -11,8 +11,8 @@
   - `displayName`: `WXML - Language Service (Enhanced)`
   - `description`: 添加了增强功能说明
   - `version`: `2.4.15`
-  - `publisher`: `v_jinlluo` （你的发布者 ID）
-  - `repository`: 更新为你的仓库地址
+  - `publisher`: `smileqwe` （你的发布者 ID）
+  - `repository`: 更新为你的仓库地址 `https://github.com/smileqwe/minapp-vscode`
   - `bugs`: 更新为你的 issues 地址
 
 ### 2. 需要准备的账号
@@ -39,11 +39,11 @@
    npm install -g @vscode/vsce
    
    # 创建发布者（只需执行一次）
-   vsce create-publisher v_jinlluo
+   vsce create-publisher smileqwe
    # 输入你的 PAT、名称、邮箱等信息
    
    # 登录发布者账号
-   vsce login v_jinlluo
+   vsce login smileqwe
    # 输入你的 PAT
    ```
 
@@ -68,7 +68,7 @@ cat package.json | grep -E '"name"|"version"|"publisher"'
 ```json
 "name": "minapp-vscode-enhanced",
 "version": "2.4.15",
-"publisher": "v_jinlluo",
+"publisher": "smileqwe",
 ```
 
 #### 2. 构建并发布
@@ -89,7 +89,7 @@ vsce publish major  # 2.4.15 -> 3.0.0
 
 #### 3. 验证发布
 
-- 访问：https://marketplace.visualstudio.com/items?itemName=v_jinlluo.minapp-vscode-enhanced
+- 访问：https://marketplace.visualstudio.com/items?itemName=smileqwe.minapp-vscode-enhanced
 - 或在 VSCode 中搜索你的插件名称
 
 ---
@@ -241,7 +241,7 @@ vsce publish
 ```bash
 # 确保 package.json 中有 publisher 字段
 # 并且已登录
-vsce login v_jinlluo
+vsce login smileqwe
 ```
 
 ### Q2: 打包时报错 "This extension consists of X files, out of which Y are JavaScript files..."
@@ -265,7 +265,7 @@ code --install-extension minapp-vscode-enhanced-2.4.15.vsix
 
 # 3. 测试功能
 # 4. 卸载
-code --uninstall-extension v_jinlluo.minapp-vscode-enhanced
+code --uninstall-extension smileqwe.minapp-vscode-enhanced
 ```
 
 ### Q4: 如何更新已发布的插件？
@@ -286,7 +286,7 @@ vsce publish
 **解决**：
 ```bash
 # 只能 unpublish 整个扩展，不能单独撤回某个版本
-vsce unpublish v_jinlluo.minapp-vscode-enhanced
+vsce unpublish smileqwe.minapp-vscode-enhanced
 
 # 如果发现问题，建议快速发布修复版本
 vsce publish patch
@@ -328,5 +328,5 @@ vsce publish
 code --install-extension xxx.vsix
 
 # 卸载插件
-code --uninstall-extension v_jinlluo.minapp-vscode-enhanced
+code --uninstall-extension smileqwe.minapp-vscode-enhanced
 ```

@@ -34,16 +34,15 @@
   "author": "Mora <qiuzhongleiabc@126.com> (https://github.com/qiu8310)",
   "maintainers": [
     {
-      "name": "v_jinlluo",
-      "email": "v_jinlluo@wesure.cn",
-      "url": "https://github.com/v_jinlluo"
+      "name": "smileqwe",
+      "url": "https://github.com/smileqwe"
     }
   ],
-  "bugs": "https://github.com/v_jinlluo/minapp-vscode-enhanced/issues",
-  "homepage": "https://github.com/v_jinlluo/minapp-vscode-enhanced",
+  "bugs": "https://github.com/smileqwe/minapp-vscode/issues",
+  "homepage": "https://github.com/smileqwe/minapp-vscode",
   "repository": {
     "type": "git",
-    "url": "https://github.com/v_jinlluo/minapp-vscode-enhanced"
+    "url": "https://github.com/smileqwe/minapp-vscode"
   },
   "engines": {
     "vscode": "^1.59.1"
@@ -55,9 +54,7 @@
   "activationEvents": [
     "workspaceContains:**/project.config.json",
     "workspaceContains:**/app.wxss",
-    "onLanguage:wxml-pug",
-    "onLanguage:wxml",
-    "onLanguage:vue"
+    "onLanguage:wxml"
   ],
   "main": "./dist/extension",
   "contributes": {
@@ -134,11 +131,6 @@
               "open-data": {
                 "body": "<open-data type=\"${1|groupName,userNickName,userAvatarUrl,userGender,userCity,userProvince,userCountry,userLanguage|}\" lang=\"${2|en,zh_CN,zh_TW|}\" />$0"
               }
-            },
-            "pug": {
-              "open-data": {
-                "body": "open-data(type=\"${1|groupName,userNickName,userAvatarUrl,userGender,userCity,userProvince,userCountry,userLanguage|}\" lang=\"${2|en,zh_CN,zh_TW|}\")$0"
-              }
             }
           }
         },
@@ -178,11 +170,6 @@
           "default": "\"",
           "description": "自定义 wxml 自动补全是生成的引号"
         },
-        "minapp-vscode.pugQuoteStyle": {
-          "type": "string",
-          "default": "'",
-          "description": "自定义 pug 自动补全是生成的引号"
-        },
         "minapp-vscode.globalStyleFiles": {
           "type": "array",
           "items": {
@@ -194,9 +181,7 @@
           "type": "string",
           "default": "wxml",
           "enum": [
-            "wxml",
-            "vue",
-            "wpy"
+            "wxml"
           ],
           "description": "创建小程序组件时候wxml文件类型，默认为.wxml"
         },
@@ -205,8 +190,7 @@
           "default": "js",
           "enum": [
             "js",
-            "ts",
-            "coffee"
+            "ts"
           ],
           "description": "创建小程序组件时候js文件类型，默认为.js"
         },
@@ -349,14 +333,6 @@
           ".wxml"
         ],
         "configuration": "./syntaxes/wxml.language-configuration.json"
-      },
-      {
-        "id": "wxml-pug",
-        "extensions": [
-          ".wpug",
-          ".pug"
-        ],
-        "configuration": "./syntaxes/wxml-pug.language-configuration.json"
       }
     ],
     "grammars": [
@@ -364,15 +340,6 @@
         "language": "wxml",
         "scopeName": "text.html.wxml",
         "path": "./syntaxes/wxml.tmLanguage.json",
-        "embeddedLanguages": {
-          "text.html": "html",
-          "source.js": "js"
-        }
-      },
-      {
-        "language": "wxml-pug",
-        "scopeName": "text.jade.wxml",
-        "path": "./syntaxes/wxml-pug.tmLanguage.json",
         "embeddedLanguages": {
           "text.html": "html",
           "source.js": "js"
