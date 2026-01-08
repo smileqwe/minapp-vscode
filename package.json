@@ -2,13 +2,13 @@
   "name": "minapp-vscode-enhanced",
   "displayName": "WXML - Language Service (Enhanced)",
   "description": "WXML Language Support with Enhanced Features - Dynamic Props & Smart Completion",
-  "version": "2.4.16",
+  "version": "2.4.17",
   "publisher": "luojin",
   "extensionKind": [
     "workspace"
   ],
   "scripts": {
-    "build:vsix": "npx vsce package",
+    "build:vsix": "npm run webpack && npx vsce package",
     "vscode:prepublish": "npm run clear && webpack --mode production",
     "webpack": "webpack --mode development",
     "webpack-dev": "webpack --mode development --watch",
