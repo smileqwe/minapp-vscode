@@ -798,6 +798,21 @@ function parseScriptFile(file: string, type: string, prop: string) {
       return undefined
     }
 
+    // ========== 阶段2.5: 启发式探测（在通用 visit 之前优先执行）==========
+    // 对于非白名单入口（如 Anim.Page / MyPage / createPage），visit 的通用遍历会无差别地把
+    // 文件里所有同名 PropertyAssignment 都加入 locs（包括 data 定义和 setData 赋值），
+    // 导致跳转结果混入噪声。这里先跑启发式探测：若能识别出配置对象并命中目标，
+    // 设置 foundInSpecialContext = true，阻止 visit 的通用遍历块执行。
+    // 注意：白名单入口（Page/Component/definePage/defineComponent）仍由 visit 内部处理，
+    //       启发式只在白名单未命中时介入。
+    if (!foundInSpecialContext && (type === 'prop' || type === 'method')) {
+      const heuristicFound = visitWithHeuristic()
+      if (heuristicFound) {
+        foundInSpecialContext = true
+        console.log('[ScriptFile] 启发式探测命中，跳过通用 visit 遍历')
+      }
+    }
+
     visit(sourceFile)
 
     /**
@@ -860,16 +875,6 @@ function parseScriptFile(file: string, type: string, prop: string) {
       }
 
       return found
-    }
-
-    // ========== 阶段3: 启发式探测兜底 ==========
-    // 特殊入口(Page/Component/definePage/defineComponent)已命中则不走兜底,避免混入顶层同名
-    if (!foundInSpecialContext && locs.length === 0 && (type === 'prop' || type === 'method')) {
-      // 先尝试启发式探测（识别三方框架的配置对象）
-      const heuristicFound = visitWithHeuristic()
-      if (heuristicFound) {
-        console.log('[ScriptFile] 启发式探测命中，跳过通用兜底')
-      }
     }
 
     // ========== 阶段4: 通用兜底 + 去重优先级 ==========

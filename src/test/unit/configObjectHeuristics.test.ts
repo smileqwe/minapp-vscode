@@ -12,7 +12,12 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as ts from 'typescript'
 
-import { scoreConfigObject, detectConfigObjects, DEFAULT_HEURISTIC } from '../../plugin/lib/configObjectHeuristics'
+import {
+  scoreConfigObject,
+  detectConfigObjects,
+  extractSectionObject,
+  DEFAULT_HEURISTIC,
+} from '../../plugin/lib/configObjectHeuristics'
 
 const FIXTURE_DIR = path.resolve(__dirname, '../../../src/test/fixtures')
 
@@ -101,6 +106,62 @@ describe('configObjectHeuristics', () => {
           `候选 ${i - 1} 得分 ${candidates[i - 1].score} 应 >= 候选 ${i} 得分 ${candidates[i].score}`
         )
       }
+    })
+  })
+
+  /**
+   * H4: Anim.Page 真实场景（@ssv-lab/anim 框架，无 .d.ts 类型包）
+   *
+   * 回归场景：Anim.Page 不是白名单入口，data 里的 totalFlowerCount 是"定义"，
+   * setData 里的 totalFlowerCount 是"赋值"。启发式探测应能识别 Anim.Page 的配置对象，
+   * 并通过 extractSectionObject 精确定位到 data section 里的定义，而非 setData 里的赋值。
+   */
+  describe('Anim.Page 真实场景 (H4)', () => {
+    it('H4.1: Anim.Page({...}) 被识别为配置对象', () => {
+      const { source } = loadFixture('anim-page-wrap.js')
+      const candidates = detectConfigObjects(source)
+      assert.ok(candidates.length >= 1, '应探测到 Anim.Page 的配置对象')
+      const top = candidates[0]
+      assert.ok(
+        top.functionName.includes('Anim.Page') || top.functionName === 'Anim.Page',
+        `functionName 应为 Anim.Page，实际 ${top.functionName}`
+      )
+    })
+
+    it('H4.2: 从 Anim.Page 配置中提取 data section，只包含定义不包含 setData 赋值', () => {
+      const { source } = loadFixture('anim-page-wrap.js')
+      const candidates = detectConfigObjects(source)
+      const top = candidates[0]
+      const dataObj = extractSectionObject(top.config, DEFAULT_HEURISTIC.dataKeys, source)
+      assert.ok(dataObj, '应提取到 data section')
+
+      // data section 里应有 totalFlowerCount 和 provinceName
+      const keys = dataObj!.properties.map(p => {
+        if (p && (p as ts.PropertyAssignment).name) {
+          const n = (p as ts.PropertyAssignment).name
+          if (ts.isIdentifier(n)) return n.text
+          if (ts.isStringLiteral(n)) return n.text
+        }
+        return undefined
+      })
+      assert.ok(keys.includes('totalFlowerCount'), `data 应包含 totalFlowerCount，实际 ${keys}`)
+      assert.ok(keys.includes('provinceName'), `data 应包含 provinceName，实际 ${keys}`)
+
+      // data section 的文本不应包含 setData（setData 在方法体里，不在 data 里）
+      const dataText = dataObj!.getText(source)
+      assert.ok(!dataText.includes('setData'), 'data section 不应包含 setData 调用')
+    })
+
+    it('H4.3: Anim.Page 的配置对象得分应高于 setData 调用', () => {
+      const { source } = loadFixture('anim-page-wrap.js')
+      const candidates = detectConfigObjects(source)
+      assert.ok(candidates.length >= 1)
+      const top = candidates[0]
+      // Anim.Page 配置对象得分：onLoad(5) + data(3) + computed(2) = 10
+      // setData({ totalFlowerCount: ... }) 得分：0（无 lifecycle/data/methods key）
+      assert.ok(top.score >= DEFAULT_HEURISTIC.threshold, `top 得分 ${top.score} 应 >= 阈值`)
+      // top-1 应该是 Anim.Page，不是 setData
+      assert.ok(top.functionName.includes('Anim'), `top-1 应是 Anim.Page，实际 ${top.functionName}`)
     })
   })
 })
