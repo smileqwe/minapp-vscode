@@ -2,7 +2,7 @@
   "name": "minapp-vscode-enhanced",
   "displayName": "WXML - Language Service (Enhanced)",
   "description": "WXML Language Support with Enhanced Features - Dynamic Props & Smart Completion",
-  "version": "2.4.17",
+  "version": "2.5.0",
   "publisher": "luojin",
   "extensionKind": [
     "workspace"
