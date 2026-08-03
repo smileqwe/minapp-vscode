@@ -25,6 +25,9 @@ export default class implements DocumentLinkProvider {
     const regexp = new RegExp(`\\b(${linkAttributeNames.join('|')})=['"]([^'"]+)['"]`, 'g')
     const remote = /^\w+:\/\// // 是否是远程路径，如 "http://" ...
     doc.getText().replace(regexp, (raw, tag: string, key: string, index: number) => {
+      // 跳过 {{ }} 变量表达式（如 src="{{map_bg}}"），这类由 PropDefinitionProvider 处理
+      if (key.includes('{{') || key.includes('}}')) return raw
+
       const isRemote = remote.test(key)
       let file: string | undefined
       if (isRemote) {
