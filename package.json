@@ -12,7 +12,9 @@
     "vscode:prepublish": "npm run clear && webpack --mode production",
     "webpack": "webpack --mode development",
     "webpack-dev": "webpack --mode development --watch",
+    "dev": "npm run webpack && code --extensionDevelopmentPath=${PWD} --user-data-dir=${PWD}/.vscode-extdev --extensions-dir=${PWD}/.vscode-extdev/extensions",
     "test-compile": "npm run clear && tsc -p ./",
+    "test:unit": "tsc -p tsconfig.test.json && mocha \"out-test/test/unit/**/*.test.js\"",
     "watch": "tsc -watch -p ./",
     "lint": "eslint --ext .ts,.tsx ./src",
     "clear": "rm -rf ./dist"

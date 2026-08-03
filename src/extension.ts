@@ -9,6 +9,7 @@ import HoverProvider from './plugin/HoverProvider'
 import { PropDefinitionProvider } from './plugin/PropDefinitionProvider'
 import WxmlAutoCompletion from './plugin/WxmlAutoCompletion'
 import WxmlDocumentHighlight from './plugin/WxmlDocumentHighlight'
+import WxmlFormatter from './plugin/WxmlFormatter'
 import ActiveTextEditorListener from './plugin/ActiveTextEditorListener'
 import { config, configActivate, configDeactivate } from './plugin/lib/config'
 import { createMiniprogramComponent } from './commands/createMiniprogramComponent'
@@ -46,6 +47,7 @@ export function activate(context: ExtensionContext): void {
   const hoverProvider = new HoverProvider(config) // 悬浮提示提供者，显示组件和属性文档
   const documentHighlight = new WxmlDocumentHighlight(config) // 文档高亮提供者，高亮匹配的标签对
   const propDefinitionProvider = new PropDefinitionProvider(config) // 属性定义提供者，支持跳转到变量/函数/样式定义
+  const wxmlFormatter = new WxmlFormatter(config) // WXML 格式化提供者（支持 wxml / prettier / prettyHtml / jsBeautifyHtml）
 
   // 配置支持的文档选择器
   const wxml = config.documentSelector.map(l => schemes(l)) // WXML 文档类型
@@ -70,6 +72,10 @@ export function activate(context: ExtensionContext): void {
 
     // 注册定义提供者：支持跳转到函数、属性、样式类的定义
     languages.registerDefinitionProvider(wxml, propDefinitionProvider),
+
+    // 注册格式化提供者：支持整文档 / 选区格式化，遵循 config.wxmlFormatter 的选择
+    languages.registerDocumentFormattingEditProvider(wxml, wxmlFormatter),
+    languages.registerDocumentRangeFormattingEditProvider(wxml, wxmlFormatter),
 
     // 注册 WXML 自动补全提供者
     // 触发字符：< 标签, 空格 属性, : @ . - 指令/事件修饰符, " ' 属性值, / 闭合标签, a-z 字母（用于 class 等属性值补全）

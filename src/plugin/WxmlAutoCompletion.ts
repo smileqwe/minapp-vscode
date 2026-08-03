@@ -9,18 +9,49 @@ import {
   CompletionItemProvider,
   TextDocument,
   CompletionItem,
+  CompletionItemKind,
   CompletionContext,
   CompletionTriggerKind,
+  MarkdownString,
 } from 'vscode'
 
 import AutoCompletion from './AutoCompletion'
 
 import { getLanguage, getLastChar } from './lib/helper'
 import { getTagAtPosition } from './getTagAtPosition/'
+import { getVisibleWxForBindings, dedupeByName, WxForBinding } from './lib/wxmlForScope'
 
 // 导出一个默认类，继承自AutoCompletion，并实现CompletionItemProvider接口
 export default class extends AutoCompletion implements CompletionItemProvider {
   id = 'wxml' as const
+
+  /**
+   * 根据光标位置,返回当前可见的 wx:for 循环变量作为补全项。
+   * 同名变量只保留最内层(dedupeByName)。
+   */
+  private buildWxForItems(document: TextDocument, position: Position, prefix: string): CompletionItem[] {
+    const text = document.getText()
+    const cursorOffset = document.offsetAt(position)
+    const bindings = dedupeByName(getVisibleWxForBindings(text, cursorOffset))
+    if (!bindings.length) return []
+    const p = (prefix || '').trim()
+    return bindings
+      .filter((b: WxForBinding) => !p || b.name.startsWith(p))
+      .map((b: WxForBinding) => {
+        const item = new CompletionItem(b.name, CompletionItemKind.Variable)
+        item.detail = b.role === 'index'
+          ? `wx:for index of {{${b.sourceExpr}}}`
+          : `wx:for item of {{${b.sourceExpr}}}`
+        item.documentation = new MarkdownString(
+          b.role === 'index'
+            ? '当前循环的 **索引**'
+            : `当前循环的 **元素**,来源:\`${b.sourceExpr}\``
+        )
+        // 排在最前面 ('0' < '1' < 其它字母)
+        item.sortText = '0_' + b.name
+        return item
+      })
+  }
 
   provideCompletionItems(
   // 提供自动完成项
@@ -59,7 +90,9 @@ export default class extends AutoCompletion implements CompletionItemProvider {
         const match = beforeCursor.match(/[a-zA-Z_$][a-zA-Z0-9_$]*$/)
         const prefix = match ? match[0] : ''
         console.log('[WxmlAutoCompletion] 提取前缀:', prefix, '| beforeCursor:', beforeCursor)
-        return Promise.resolve(this.autoCompleteProps(document, prefix))
+        const forItems = this.buildWxForItems(document, position, prefix)
+        const jsItems = this.autoCompleteProps(document, prefix)
+        return Promise.resolve([...forItems, ...jsItems])
       }
       
       // 尝试提供补全（会自动判断是否在 class 属性中）
@@ -76,7 +109,9 @@ export default class extends AutoCompletion implements CompletionItemProvider {
         const prevChar = getLastChar(document, new Position(position.line, position.character - 1))
         if (prevChar === '{') {
           console.log('[WxmlAutoCompletion] 检测到 {{ 开始，触发变量补全')
-          return Promise.resolve(this.autoCompleteProps(document, ''))
+          const forItems = this.buildWxForItems(document, position, '')
+          const jsItems = this.autoCompleteProps(document, '')
+          return Promise.resolve([...forItems, ...jsItems])
         }
         return [] as any
       }
