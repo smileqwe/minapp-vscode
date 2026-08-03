@@ -6,6 +6,7 @@ import { getProp } from './lib/ScriptFile'
 import { definitionTagName } from '../common/src'
 import { getCustomOptions, getLanguage } from './lib/helper'
 import { getVisibleWxForBindings } from './lib/wxmlForScope'
+import { kebabToCamel } from '../common/src/attrNameCase'
 
 const reserveWords = ['true', 'false']
 
@@ -80,8 +81,10 @@ export class PropDefinitionProvider implements DefinitionProvider {
         // 处理属性跳转
         const component = await definitionTagName(tag.name, language, getCustomOptions(this.config, document))
         if (component && component.path) {
-          // locs.push(new Location(Uri.file(component.path), new Position(0, 0)))
-          return this.searchScript('prop', posWord, { fileName: component.path })
+          // posWord 可能是中划线写法（fixed-placeholder），js 里 properties 定义是驼峰（fixedPlaceholder）
+          // 转成驼峰再查找
+          const propName = kebabToCamel(posWord)
+          return this.searchScript('prop', propName, { fileName: component.path })
         }
       }
       // 不在属性上
