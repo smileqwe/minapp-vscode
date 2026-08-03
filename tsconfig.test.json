@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "out-test",
+    "rootDir": "src",
+    "sourceMap": true,
+    "noUnusedLocals": false,
+    "types": ["mocha", "node"]
+  },
+  "include": [
+    "src/plugin/lib/identifierCollector.ts",
+    "src/plugin/lib/wxmlForScope.ts",
+    "src/plugin/lib/configObjectHeuristics.ts",
+    "src/test/unit/**/*"
+  ]
+}
