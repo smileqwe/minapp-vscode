@@ -163,5 +163,37 @@ describe('configObjectHeuristics', () => {
       // top-1 应该是 Anim.Page，不是 setData
       assert.ok(top.functionName.includes('Anim'), `top-1 应是 Anim.Page，实际 ${top.functionName}`)
     })
+
+    it('H4.4: 从 Anim.Page 配置中提取 computed section', () => {
+      const { source } = loadFixture('anim-page-wrap.js')
+      const candidates = detectConfigObjects(source)
+      const top = candidates[0]
+      const computedObj = extractSectionObject(top.config, DEFAULT_HEURISTIC.computedKeys, source)
+      assert.ok(computedObj, '应提取到 computed section')
+
+      // computed section 里应有 isLogin 和 highlightProvinceName（都是方法简写 MethodDeclaration）
+      const keys = computedObj!.properties.map(p => {
+        if (ts.isMethodDeclaration(p) && ts.isIdentifier(p.name)) return p.name.text
+        if (ts.isPropertyAssignment(p) && ts.isIdentifier(p.name)) return p.name.text
+        return undefined
+      })
+      assert.ok(keys.includes('isLogin'), `computed 应包含 isLogin，实际 ${keys}`)
+      assert.ok(keys.includes('highlightProvinceName'), `computed 应包含 highlightProvinceName，实际 ${keys}`)
+    })
+
+    it('H4.5: computed 里的方法简写是 MethodDeclaration（type=prop 查询需专门处理）', () => {
+      const { source } = loadFixture('anim-page-wrap.js')
+      const candidates = detectConfigObjects(source)
+      const top = candidates[0]
+      const computedObj = extractSectionObject(top.config, DEFAULT_HEURISTIC.computedKeys, source)
+      assert.ok(computedObj)
+      // highlightProvinceName 应是 MethodDeclaration（方法简写），不是 PropertyAssignment
+      const target = computedObj!.properties.find(p => {
+        if (ts.isMethodDeclaration(p) && ts.isIdentifier(p.name)) return p.name.text === 'highlightProvinceName'
+        return false
+      })
+      assert.ok(target, 'highlightProvinceName 应是 MethodDeclaration')
+      assert.ok(ts.isMethodDeclaration(target!), `实际类型: ${ts.SyntaxKind[target!.kind]}`)
+    })
   })
 })

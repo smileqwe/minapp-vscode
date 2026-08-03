@@ -830,11 +830,12 @@ function parseScriptFile(file: string, type: string, prop: string) {
       const dataKeys = DEFAULT_HEURISTIC.dataKeys
       const methodKeys = DEFAULT_HEURISTIC.methodKeys
       const propKeys = DEFAULT_HEURISTIC.propKeys
+      const computedKeys = DEFAULT_HEURISTIC.computedKeys
 
       let found = false
 
       if (type === 'prop') {
-        // 依次尝试 data / properties section
+        // 依次尝试 data / properties / computed section
         const dataObj = extractSectionObject(best.config, dataKeys, sourceFile)
         if (dataObj) {
           visitObjectProperties(dataObj)
@@ -845,6 +846,30 @@ function parseScriptFile(file: string, type: string, prop: string) {
           if (propObj) {
             visitObjectProperties(propObj)
             found = locs.length > 0
+          }
+        }
+        // computed 属性：其返回值在运行时会挂到 data 上，type=prop 时应能跳转
+        // computed 里通常是方法简写（MethodDeclaration），visitObjectProperties 对
+        // MethodDeclaration 只在 type=method 时命中，所以这里专门处理 type=prop 的 computed
+        if (!found) {
+          const computedObj = extractSectionObject(best.config, computedKeys, sourceFile)
+          if (computedObj) {
+            computedObj.properties.forEach(property => {
+              if (found) return
+              let name: string | undefined
+              if (ts.isMethodDeclaration(property)) {
+                name = getPropertyName(property)
+              } else if (ts.isPropertyAssignment(property)) {
+                name = getPropertyName(property)
+              } else if (ts.isShorthandPropertyAssignment(property)) {
+                name = getPropertyName(property)
+              }
+              if (name && matchesProp(name)) {
+                console.log(`[ScriptFile] computed 属性: ${name}`)
+                addLocation(property, name, `computed ${name}`)
+                found = true
+              }
+            })
           }
         }
       } else if (type === 'method') {
