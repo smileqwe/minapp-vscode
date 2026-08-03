@@ -3,7 +3,7 @@
 ## WXML - Language Service (Enhanced)
 
 > **本项目基于 [wx-minapp/minapp-vscode](https://github.com/wx-minapp/minapp-vscode) 进行增强开发**
-> 
+>
 > - 原项目作者：[Mora](https://github.com/qiu8310) & [iChenLei](https://github.com/iChenLei)
 > - 增强版维护：[smileqwe](https://github.com/smileqwe)
 > - 开源协议：[MIT License](./LICENSE)
@@ -22,32 +22,40 @@
 - 🎯 **智能空格补全**：根据上下文自动识别触发 class 补全或属性补全
 - 💡 **表达式变量补全**：在 `{{ }}` 内自动提示可用变量
 - 🔍 **变量悬停提示**：鼠标移入模板中的 JS 变量时显示其类型定义和位置
+- 🔗 **Ctrl+Click 跳转**：`src` 属性路径和 `{{ }}` 变量表达式支持 Ctrl+Click 跳转到定义
+- 🧩 **三方框架封装探测**：启发式识别 `MyPage`、`createPage`、`Anim.Page` 等三方框架封装的配置对象
+- 📝 **驼峰/中划线兼容**：组件属性名驼峰与中划线写法互通识别，补全风格可配置
+- 🎨 **样式 @import 引入**：递归解析样式文件中的 `@import`，补全和悬浮覆盖引入的样式
+- 📁 **根目录配置**：`rootPath` 支持多仓库/子目录项目
 - 🔧 **改进的 AST 解析**：基于 TypeScript AST 的属性解析，支持更复杂的组件定义
 
-详见 [CHANGELOG.md](./CHANGELOG.md) 中的 v2.4.15 版本说明。
+详见 [CHANGELOG.md](./CHANGELOG.md) 中的版本说明。
 
 ### 最近更新 【[CHANGELOG.md](./CHANGELOG.md)】
 
 ### 主要功能
 
-* [支持样式文件@import引入]
-* [智能空格补全：自动识别上下文触发 class 或属性补全](#smart-space)
-* [支持classname显示对应的样式定义]
-* [自定义组件动态属性解析（支持 Object.assign、扩展运算符等）](#dynamic-props)
-* [模板表达式变量补全（支持 `{{ }}` 内的变量提示）](#expression-completion)
-* [变量悬停提示：鼠标移入显示变量类型定义](#variable-hover)
-* [一键创建小程序组件](#create-component)
-* [标签名与属性自动补全](#tag-and-attr)
-* [根据组件已有的属性，自动筛选出对应支持的属性集合](#smart-attr)
-* [属性值自动补全](#attr-value)
-* [点击模板文件中的函数或属性跳转到 js/ts 定义的地方](#attr-definition)
-* [样式名自动补全](#attr-class-value)
-* [支持 link](#link)
-* [自定义组件自动补全](#custom-component)
-* [模板文件中 js 变量高亮](#highlight)
-* [内置 snippets](#snippets)
-* [支持 emmet 写法](#emmet)
-* [wxml 格式化](#wxml-formatter)
+- [支持样式文件@import 引入]
+- [智能空格补全：自动识别上下文触发 class 或属性补全](#smart-space)
+- [支持 classname 显示对应的样式定义]
+- [自定义组件动态属性解析（支持 Object.assign、扩展运算符等）](#dynamic-props)
+- [模板表达式变量补全（支持 `{{ }}` 内的变量提示）](#expression-completion)
+- [变量悬停提示：鼠标移入显示变量类型定义](#variable-hover)
+- [Ctrl+Click 跳转：src 路径和 `{{ }}` 变量支持 Ctrl+Click 跳转](#ctrl-click)
+- [三方框架封装探测：启发式识别 MyPage/createPage 等封装](#heuristic-detection)
+- [驼峰/中划线属性名兼容：识别互通，补全风格可配置](#attr-name-case)
+- [一键创建小程序组件](#create-component)
+- [标签名与属性自动补全](#tag-and-attr)
+- [根据组件已有的属性，自动筛选出对应支持的属性集合](#smart-attr)
+- [属性值自动补全](#attr-value)
+- [点击模板文件中的函数或属性跳转到 js/ts 定义的地方](#attr-definition)
+- [样式名自动补全](#attr-class-value)
+- [支持 link](#link)
+- [自定义组件自动补全](#custom-component)
+- [模板文件中 js 变量高亮](#highlight)
+- [内置 snippets](#snippets)
+- [支持 emmet 写法](#emmet)
+- [wxml 格式化](#wxml-formatter)
 
 > **所有自动补全的模板数据都来自于官方文档，通过[脚本](https://github.com/wx-minapp/minapp-generator)自动获取的**
 
@@ -63,11 +71,11 @@
 ```html
 <!-- 场景 1：class 属性值内 -->
 <view class="container ">
-<!-- 按空格，提示 CSS class 名称 -->
+  <!-- 按空格，提示 CSS class 名称 -->
 
-<!-- 场景 2：标签内其他位置 -->
-<popup >
-<!-- 按空格，提示组件的所有属性 -->
+  <!-- 场景 2：标签内其他位置 -->
+  <popup> <!-- 按空格，提示组件的所有属性 --></popup></view
+>
 ```
 
 <a id="dynamic-props"></a>
@@ -85,9 +93,9 @@
 Component({
   properties: Object.assign(
     {},
-    generateTrackProps(),           // 函数返回的属性
-    { customProp: String }          // 直接定义的属性
-  )
+    generateTrackProps(), // 函数返回的属性
+    { customProp: String } // 直接定义的属性
+  ),
 })
 ```
 
@@ -135,6 +143,7 @@ Component({
 ```
 
 **支持的类型识别：**
+
 - ✅ 基本类型：`string`, `number`, `boolean`, `null`, `undefined`
 - ✅ 数组类型：`string[]`, `number[]`
 - ✅ 对象类型：`object`
@@ -143,6 +152,7 @@ Component({
 - ✅ 显式类型标注（TypeScript）
 
 **支持场景：**
+
 - ✅ `{{ }}` 表达式中的变量
 - ✅ 属性值中的变量引用
 - ✅ 多级属性访问（如 `obj.prop.subProp`）
@@ -150,22 +160,115 @@ Component({
 - ✅ 小程序 Page/Component data/properties
 
 **显示格式：**
+
 ```typescript
 const variableName: Type
 ```
 
 文件位置会显示在下方（如 `index.js:10`），点击可跳转。
 
+<a id="ctrl-click"></a>
+
+### Ctrl+Click 跳转
+
+支持在 wxml 中通过 **Ctrl+Click**（macOS 为 Cmd+Click）快速跳转：
+
+- **`src` 属性路径**：如 `<image src="../../assets/logo.png" />`，Ctrl+Click 可直接打开目标文件
+- **`{{ }}` 变量表达式**：如 `src="{{map_bg}}"`，Ctrl+Click 跳转到变量定义位置
+  - `wx:for` 循环变量 → wxml 自身的 `wx:for` 定义处
+  - `data`/`properties`/`computed` 定义 → js 文件的对应位置
+
+```html
+<!-- src 路径跳转 -->
+<image src="/assets/logo.png" />
+<!-- Ctrl+Click 打开 logo.png -->
+
+<!-- 变量表达式跳转 -->
+<view wx:for="{{list}}">
+  <text>{{item.title}}</text>
+  <!-- Ctrl+Click item → 跳转到 wx:for 的 item 定义 -->
+</view>
+
+<image src="{{avatar}}" />
+<!-- Ctrl+Click avatar → 跳转到 js 中 avatar 的定义 -->
+```
+
+> Ctrl+Click 和 F12（跳转到定义）行为统一，使用相同的优先级逻辑。
+
+可配置 `minapp-vscode.linkAttributeNames` 来扩展支持 Ctrl+Click 的属性名（默认 `['src']`）。
+
+<a id="heuristic-detection"></a>
+
+### 三方框架封装探测
+
+插件支持识别三方框架封装的组件/页面定义（如 `MyPage({...})`、`createPage({...})`），无需硬编码入口名白名单。
+
+通过启发式评分机制，检测配置对象中是否包含 `data`、`methods`、`properties`、`lifecycle` 等关键字，得分超过阈值即判定为小程序配置对象：
+
+```javascript
+// 三方框架封装示例
+MyPage({
+  data: { count: 0 }, // data 信号
+  methods: { increment() {} }, // methods 信号
+  onLoad() {}, // 生命周期信号（最强信号）
+  computed: { double() {} }, // computed 信号
+})
+```
+
+插件会自动识别此类封装，支持：
+
+- 跳转到定义（`data`/`methods`/`computed` 中的变量和方法）
+- 变量悬停提示
+- `{{ }}` 表达式变量补全
+
+> 此功能作为 AST 结构化解析的 Layer 1 兜底，在 `visit()` 之前执行，避免 `setData` 等噪音干扰。
+
+<a id="attr-name-case"></a>
+
+### 驼峰/中划线属性名兼容
+
+小程序组件 `properties` 在 JS 里用驼峰（如 `userName`），在 WXML 里既可以用驼峰 `userName` 也可以用中划线 `user-name`（框架自动转换）。插件全面兼容这两种写法。
+
+**识别始终兼容**（无论配置哪种风格）：
+
+- 属性补全去重：已写 `user-name` 时不再补全 `userName`
+- 属性值补全：写 `user-name="xxx"` 时能找到 `userName` 的枚举值
+- Hover 提示：光标在 `user-name` 上时显示 `userName` 的文档
+- F12 跳转：写 `user-name` 时能跳转到 js 里 `fixedPlaceholder` 的定义
+
+**补全命名可配置**（`minapp-vscode.attrNameStyle`）：
+
+```jsonc
+{
+  // auto: 根据当前文件已有写法自动判断（默认）
+  // camel: 补全用驼峰（如 userName）
+  // kebab: 补全用中划线（如 user-name）
+  "minapp-vscode.attrNameStyle": "auto"
+}
+```
+
+```html
+<!-- properties 定义: { fixedPlaceholder: Boolean } -->
+
+<!-- attrNameStyle: "camel" -->
+<navigation fixedPlaceholder="{{false}}" />
+
+<!-- attrNameStyle: "kebab" -->
+<navigation fixed-placeholder="{{false}}" />
+
+<!-- attrNameStyle: "auto" → 根据文件里已有写法自动判断 -->
+```
+
 <a id="create-component"></a>
 
 ### 一键创建小程序组件
 
-* 右键可以看到 `New Miniprogram Component` 选项，输入组件名即可一键创建 `.wxml`/`.js`/`.wxss`/`.json` 以及组件文件夹
-* 创建成功后自动打开 `js` 文件
+- 右键可以看到 `New Miniprogram Component` 选项，输入组件名即可一键创建 `.wxml`/`.js`/`.wxss`/`.json` 以及组件文件夹
+- 创建成功后自动打开 `js` 文件
 
 ![示例图片](https://funimg.pddpic.com/mobile_piggy/958baa82-f263-402f-8887-b1eaabffbc7c.gif)
 
-* 创建组件支持配置 css/wxml/js 后缀，比如项目使用 less/ts
+- 创建组件支持配置 css/wxml/js 后缀，比如项目使用 less/ts
 
 ![示例图片](https://funimg.pddpic.com/mobile_piggy/a4af85c2-d4cb-44f2-aa47-831b80b20c7a.gif)
 
@@ -177,16 +280,14 @@ const variableName: Type
 }
 ```
 
-
 <a id="tag-and-attr"></a>
 
 ### 标签名与属性名自动补全
 
-* wxml 中需要输入 `<` 才会触发标签补全
-* 输入空格会触发对应标签的属性补全
+- wxml 中需要输入 `<` 才会触发标签补全
+- 输入空格会触发对应标签的属性补全
 
 ![示例图片](https://n1image.hjfile.cn/res7/2018/03/01/13631761451ae134c6eb3ea2ed1a6a12.gif)
-
 
 <a id="smart-attr"></a>
 
@@ -239,8 +340,8 @@ const variableName: Type
 
 ### 支持 link
 
-* `<template lang="wxml" minapp="native">`   表示使用 wxml 语言，不使用任何框架
-* `<template lang="pug" minapp="mpvue">`     表示使用 pug 语言，并使用 mpvue 框架
+- `<template lang="wxml" minapp="native">` 表示使用 wxml 语言，不使用任何框架
+- `<template lang="pug" minapp="mpvue">` 表示使用 pug 语言，并使用 mpvue 框架
 
 > 注意，[mpvue 中指定 lang="wxml" 会报错](https://github.com/Meituan-Dianping/mpvue/issues/208)，需要等待作者修复！不过
 > 你可以临时使用 `xlang="wxml"`，但这样同时也会触发 vue 的自动补全
@@ -285,12 +386,12 @@ const variableName: Type
 
 ### 内置 snippets
 
-  - 自带 swiper/icon/button/picker time/picker date/picker region/checkbox-group/radio-group，见[文件](https://github.com/wx-minapp/minapp-vscode/blob/main/src/plugin/res/snippets.ts)
-  - 可以通过配置项 `minapp-vscode.snippets` 来定义你自己的 snippets
+- 自带 swiper/icon/button/picker time/picker date/picker region/checkbox-group/radio-group，见[文件](https://github.com/wx-minapp/minapp-vscode/blob/main/src/plugin/res/snippets.ts)
+- 可以通过配置项 `minapp-vscode.snippets` 来定义你自己的 snippets
 
-  _和官方的 Snippets 的区别时，这里的 Snippets 只需要指定 key 和 body 即可，组件描述自动会根据 key 来获取（另外后期可以让配置和内置的数据结合起来）_
+_和官方的 Snippets 的区别时，这里的 Snippets 只需要指定 key 和 body 即可，组件描述自动会根据 key 来获取（另外后期可以让配置和内置的数据结合起来）_
 
-  ![示例图片](https://n1image.hjfile.cn/res7/2018/05/26/4a25927085e96e6bd9f05bf735621a8b.gif)
+![示例图片](https://n1image.hjfile.cn/res7/2018/05/26/4a25927085e96e6bd9f05bf735621a8b.gif)
 
 <a id="emmet"></a>
 
@@ -304,14 +405,16 @@ const variableName: Type
 
 ### wxml 格式
 
-支持`prettyHtml`, `js-beautify` 和`prettier`(部分内容需要采用兼容html的方式书写)
+支持`prettyHtml`, `js-beautify` 和`prettier`(部分内容需要采用兼容 html 的方式书写)
 
-* 默认 `wxml`
+- 默认 `wxml`
+
 ```jsonc
 "minapp-vscode.wxmlFormatter": "wxml", // 指定格式化工具
 ```
 
-* [js-beautify](https://github.com/beautify-web/js-beautify#css--html)
+- [js-beautify](https://github.com/beautify-web/js-beautify#css--html)
+
 ```jsonc
 "minapp-vscode.wxmlFormatter": "jsBeautifyHtml", // 指定格式化工具
 // 使用 vscode settings.json 中的 `html.format.[配置字段]` 配置字段, 详见下方 tips.4
@@ -327,7 +430,8 @@ const variableName: Type
 }
 ```
 
-* [prettyHtml](https://github.com/Prettyhtml/prettyhtml#prettyhtmldoc-string-options-vfile)
+- [prettyHtml](https://github.com/Prettyhtml/prettyhtml#prettyhtmldoc-string-options-vfile)
+
 ```jsonc
 "minapp-vscode.wxmlFormatter": "prettyHtml", // 指定格式化工具
 "minapp-vscode.prettyHtml": { // prettyHtml 默认配置
@@ -340,7 +444,9 @@ const variableName: Type
   "sortAttributes": false
 }
 ```
-* [prettier](https://github.com/prettier/prettier)
+
+- [prettier](https://github.com/prettier/prettier)
+
 ```jsonc
 "minapp-vscode.wxmlFormatter": "prettier", // 指定格式化工具
 "minapp-vscode.prettier": { // prettier 更多参考 https://prettier.io/docs/en/options.html
@@ -350,7 +456,8 @@ const variableName: Type
   "singleQuote": false
 }
 ```
-* tips:
+
+- tips:
   1. 针对`prettyHtml` 和 `prettier` 方式，会自动读取项目下的配置文件，[Prettier configuration file](https://prettier.io/docs/en/configuration.html) `.editorconfig`
   2. 切换格式化工具需重启 VSCode
   3. 针对 `prettyHtml` ，和 `prettier` 采用 HTML5 的语法和 wxml 不完全一致，写法要注意兼容
@@ -365,12 +472,12 @@ const variableName: Type
 ```jsonc
 {
   // 项目根目录配置（绝对路径）
-  "minapp-vscode.rootPath": "/Users/username/project",  // 项目真正的根目录（绝对路径）
-  
+  "minapp-vscode.rootPath": "/Users/username/project", // 项目真正的根目录（绝对路径）
+
   // 组件创建相关
-  "minapp-vscode.cssExtname": "wxss",      // CSS 文件扩展名，默认 wxss，支持 styl/sass/scss/less/css
-  "minapp-vscode.wxmlExtname": "wxml",     // WXML 文件扩展名，默认 wxml
-  "minapp-vscode.jsExtname": "js",         // JS 文件扩展名，默认 js，支持 ts
+  "minapp-vscode.cssExtname": "wxss", // CSS 文件扩展名，默认 wxss，支持 styl/sass/scss/less/css
+  "minapp-vscode.wxmlExtname": "wxml", // WXML 文件扩展名，默认 wxml
+  "minapp-vscode.jsExtname": "js" // JS 文件扩展名，默认 js，支持 ts
 }
 ```
 
@@ -436,6 +543,7 @@ project/
 ```
 
 **注意事项：**
+
 - ⚠️ **必须使用绝对路径**，不支持相对路径
 - 配置 `rootPath` 后，`resolveRoots` 和 `globalStyleFiles` 等路径都相对于 `rootPath` 解析
 - 如果在项目根目录打开，无需配置此项
@@ -448,16 +556,12 @@ project/
 {
   // 全局样式文件路径（用于 class 补全）
   "minapp-vscode.globalStyleFiles": [
-    "src/app.wxss",                        // 小程序全局样式文件
-    "src/common/styles/global.wxss"        // 其他全局样式
+    "src/app.wxss", // 小程序全局样式文件
+    "src/common/styles/global.wxss" // 其他全局样式
   ],
-  
+
   // 样式文件扩展名（建议配置以优化性能）
-  "minapp-vscode.styleExtensions": [
-    "wxss",
-    "scss",
-    "less"
-  ]
+  "minapp-vscode.styleExtensions": ["wxss", "scss", "less"]
 }
 ```
 
@@ -468,15 +572,13 @@ project/
   // 解析自定义组件的根目录（相对于项目根目录）
   // 用于解析自定义组件路径和静态资源路径
   "minapp-vscode.resolveRoots": [
-    "src",                                 // 源码目录
-    "components",                          // 组件目录
-    "miniprogram"                          // 小程序根目录
+    "src", // 源码目录
+    "components", // 组件目录
+    "miniprogram" // 小程序根目录
   ],
-  
+
   // 禁用基础属性的组件列表
-  "minapp-vscode.noBasicAttrsComponents": [
-    "custom-component"
-  ]
+  "minapp-vscode.noBasicAttrsComponents": ["custom-component"]
 }
 ```
 
@@ -485,6 +587,7 @@ project/
 `resolveRoots` 用于配置路径解析的根目录，影响以下功能：
 
 1. **自定义组件路径解析**
+
    ```json
    // app.json 或 page.json
    {
@@ -493,17 +596,20 @@ project/
      }
    }
    ```
+
    插件会在 `resolveRoots` 配置的目录中查找 `/components/my-component`
 
 2. **静态资源路径解析（link 功能）**
+
    ```html
    <image src="/images/logo.png" />
    ```
+
    插件会在 `resolveRoots` 配置的目录中查找 `/images/logo.png`
 
 3. **样式文件路径解析**
    ```css
-   @import "/common/styles/base.wxss";
+   @import '/common/styles/base.wxss';
    ```
    插件会在 `resolveRoots` 配置的目录中查找样式文件
 
@@ -546,6 +652,7 @@ project/
 ```
 
 **注意事项：**
+
 - 路径相对于项目根目录（workspace root）
 - 支持配置多个根目录，插件会依次查找
 - 如果不配置，默认只在项目根目录查找
@@ -556,11 +663,20 @@ project/
 ```jsonc
 {
   // 支持 link 的属性名列表（设为空数组可禁用 link 功能）
-  "minapp-vscode.linkAttributeNames": [
-    "src",
-    "image",
-    "icon"
-  ]
+  "minapp-vscode.linkAttributeNames": ["src", "image", "icon"]
+}
+```
+
+### 属性命名风格配置
+
+```jsonc
+{
+  // 自定义组件属性名在补全时的命名风格
+  // - "auto": 根据当前文件已有写法自动判断（默认）
+  // - "camel": 补全用驼峰（如 userName）
+  // - "kebab": 补全用中划线（如 user-name）
+  // 无论哪种风格，识别（hover/定义跳转/去重）都兼容驼峰与中划线互通
+  "minapp-vscode.attrNameStyle": "auto"
 }
 ```
 
@@ -570,13 +686,13 @@ project/
 {
   // 是否禁用变量高亮装饰（true 为禁用，false 为启用）
   "minapp-vscode.disableDecorate": true,
-  
+
   // 装饰样式配置
   "minapp-vscode.decorateType": {
-    "color": "#e673a8",                    // 自定义颜色
-    "fontWeight": "bold"                   // 可选：bold
+    "color": "#e673a8", // 自定义颜色
+    "fontWeight": "bold" // 可选：bold
   },
-  
+
   // 是否高亮复杂表达式（false 时只高亮变量，不高亮表达式）
   "minapp-vscode.decorateComplexInterpolation": true
 }
@@ -599,13 +715,13 @@ project/
 ```jsonc
 {
   // === 项目根目录（非根目录打开时配置，使用绝对路径） ===
-  "minapp-vscode.rootPath": "/Users/username/project",       // 指向真正的项目根目录（绝对路径）
-  
+  "minapp-vscode.rootPath": "/Users/username/project", // 指向真正的项目根目录（绝对路径）
+
   // === 组件创建 ===
   "minapp-vscode.cssExtname": "scss",
   "minapp-vscode.wxmlExtname": "wxml",
   "minapp-vscode.jsExtname": "ts",
-  
+
   // === 格式化 ===
   "minapp-vscode.wxmlFormatter": "prettier",
   "minapp-vscode.prettier": {
@@ -613,23 +729,26 @@ project/
     "singleQuote": true,
     "printWidth": 120
   },
-  
+
   // === 样式补全 ===
   "minapp-vscode.globalStyleFiles": ["src/app.wxss"],
   "minapp-vscode.styleExtensions": ["wxss", "scss"],
-  
+
   // === 组件解析 ===
-  "minapp-vscode.resolveRoots": ["src", "components"],  // 配置路径解析根目录，支持多个
-  
+  "minapp-vscode.resolveRoots": ["src", "components"], // 配置路径解析根目录，支持多个
+
   // === 变量高亮 ===
   "minapp-vscode.disableDecorate": false,
   "minapp-vscode.decorateType": {
     "color": "#e673a8"
   },
-  
+
   // === Link ===
   "minapp-vscode.linkAttributeNames": ["src", "image"],
-  
+
+  // === 属性命名风格 ===
+  "minapp-vscode.attrNameStyle": "auto", // auto/camel/kebab
+
   // === 自定义 Snippets ===
   "minapp-vscode.snippets": {
     "view-container": "<view class=\"container\">$1</view>$0"
@@ -663,6 +782,7 @@ project/
 本项目基于 [wx-minapp/minapp-vscode](https://github.com/wx-minapp/minapp-vscode) 进行增强开发。
 
 **原项目核心贡献者：**
+
 - [Mora (qiu8310)](https://github.com/qiu8310) - 原项目创建者
 - [iChenLei](https://github.com/iChenLei) - 项目维护者
 - 以及所有为原项目做出贡献的开发者们
@@ -691,6 +811,7 @@ project/
 5. 提交 Pull Request
 
 **提交规范：**
+
 - `feat:` 新功能
 - `fix:` 修复 bug
 - `docs:` 文档更新
@@ -706,12 +827,14 @@ project/
 基于原项目 [wx-minapp/minapp-vscode](https://github.com/wx-minapp/minapp-vscode) 开发，同样遵循 MIT License。
 
 **MIT License 允许：**
+
 - ✅ 商业使用
 - ✅ 修改
 - ✅ 分发
 - ✅ 私人使用
 
 **要求：**
+
 - 📄 保留版权和许可声明
 - 📄 说明修改内容
 
