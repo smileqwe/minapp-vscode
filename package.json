@@ -308,6 +308,21 @@
         "minapp-vscode.rootPath": {
           "type": "string",
           "description": "当前项目根目录 (绝对路径引用将使用这个根目录，默认当前打开项目根目录)"
+        },
+        "minapp-vscode.attrNameStyle": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "camel",
+            "kebab"
+          ],
+          "default": "auto",
+          "enumDescriptions": [
+            "根据当前文件已有写法自动判断用驼峰还是中划线",
+            "补全时用驼峰命名（如 userName）",
+            "补全时用中划线命名（如 user-name）"
+          ],
+          "description": "自定义组件属性名在补全时的命名风格。无论哪种风格，识别（hover/定义跳转/去重）都兼容驼峰与中划线互通。"
         }
       }
     },

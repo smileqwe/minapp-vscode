@@ -80,6 +80,14 @@ export interface Config {
   sass: Options
   /** 当前项目根目录 (主要为了多仓库项目设置) */
   rootPath: string
+  /**
+   * 自定义组件属性名在补全时的命名风格
+   * - camel: 补全用驼峰（如 userName）
+   * - kebab: 补全用中划线（如 user-name）
+   * - auto: 根据当前文件已有写法自动判断
+   * 无论哪种风格，识别（hover/定义跳转/去重）都兼容驼峰与中划线互通
+   */
+  attrNameStyle: 'auto' | 'camel' | 'kebab'
 }
 
 export const config: Config = {
@@ -110,7 +118,8 @@ export const config: Config = {
   prettier: {},
   documentSelector: ['wxml'],
   sass: {},
-  rootPath: ''
+  rootPath: '',
+  attrNameStyle: 'auto',
 }
 
 
@@ -143,6 +152,7 @@ function getConfig() {
   config.documentSelector = minapp.get('documentSelector', ['wxml'])
   config.sass = minapp.get('sass', {})
   config.rootPath = minapp.get('rootPath', '')
+  config.attrNameStyle = minapp.get('attrNameStyle', 'auto')
 }
 
 function getResolveRoots(doc: vscode.TextDocument): string[] {

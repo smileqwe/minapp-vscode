@@ -15,6 +15,14 @@ import {
   getComponentAttrValueMarkdown,
   LanguageConfig,
 } from './dev'
+import {
+  attrNameEquals,
+  attrNameExists,
+  normalizeAttrName,
+  camelToKebab,
+  kebabToCamel,
+  AttrNameStyle,
+} from './attrNameCase'
 
 export interface TagItem {
   component: Component
@@ -50,22 +58,33 @@ export async function autocompleteTagName(lc: LanguageConfig, co?: CustomOptions
  * @param {string} tagName 当前 tag 的名称
  * @param {{[key: string]: string}} attrs 当前已经写了的属性的集合
  * @param {CustomOptions} co 用于解析自定义组件的配置
+ * @param {AttrNameStyle} attrNameStyle 补全时的属性命名风格
+ * @param {() => 'camel' | 'kebab'} autoDecider auto 模式下判断命名风格的函数
  */
 export async function autocompleteTagAttr(
   tagName: string,
   tagAttrs: { [key: string]: string | boolean },
   lc: LanguageConfig,
-  co?: CustomOptions
+  co?: CustomOptions,
+  attrNameStyle: AttrNameStyle = 'auto',
+  autoDecider?: () => 'camel' | 'kebab'
 ) {
   const attrs = await getAvailableAttrs(tagName, tagAttrs, lc, co)
 
-  // 属性不能是已经存在的，也不能是事件
+  // 属性不能是已经存在的（兼容驼峰/中划线），也不能是事件
   const filter = createComponentFilter(tagAttrs, false)
 
   const noBasics = lc.noBasicAttrsComponents && lc.noBasicAttrsComponents.includes(tagName)
+
+  // 补全结果按配置风格转换属性名
+  const mapWithStyle = (a: ComponentAttr) => {
+    const normalized = { ...a, name: normalizeAttrName(a.name, attrNameStyle, autoDecider) }
+    return { attr: normalized, markdown: getComponentAttrMarkdown(a) } as TagAttrItem
+  }
+
   return {
-    basics: noBasics ? [] : (lc.baseAttrs.filter(filter).map(mapComponentAttr) as TagAttrItem[]),
-    natives: attrs.filter(filter).map(mapComponentAttr) as TagAttrItem[],
+    basics: noBasics ? [] : (lc.baseAttrs.filter(filter).map(mapWithStyle) as TagAttrItem[]),
+    natives: attrs.filter(filter).map(mapWithStyle) as TagAttrItem[],
   }
 }
 
@@ -80,7 +99,8 @@ export async function autocompleteTagAttrValue(
 ) {
   const comp = await getComponent(tagName, lc, co)
   if (!comp || !comp.attrs) return []
-  const attr = comp.attrs.find(a => a.name === tagAttrName)
+  // 兼容驼峰/中划线匹配
+  const attr = comp.attrs.find(a => attrNameEquals(a.name, tagAttrName))
   if (!attr) return []
   const values: ComponentAttrValue[] = attr.enum
     ? attr.enum
@@ -132,7 +152,8 @@ function createComponentFilter(existsTagAttrs: { [key: string]: string | boolean
   return (attr: ComponentAttr) => {
     // let isEvent = attr.name.startsWith('bind') || attr.name.startsWith('catch')
     const isEvent = false
-    return existsTagAttrs[attr.name] == null && (event == null || (event ? isEvent : !isEvent))
+    // 兼容驼峰/中划线：已写 user-name 时不再补全 userName
+    return !attrNameExists(attr.name, existsTagAttrs) && (event == null || (event ? isEvent : !isEvent))
   }
 }
 
@@ -159,24 +180,28 @@ function getAvailableAttrsFromComponent(
   tagAttrs: { [key: string]: string | boolean }
 ): ComponentAttr[] {
   const attrs = comp.attrs || []
-  const results = attrs.filter(a => tagAttrs[a.name] == null) // 先取出没有写的属性
+  // 先取出没有写的属性（兼容驼峰/中划线）
+  const results = attrs.filter(a => !attrNameExists(a.name, tagAttrs))
     // 如果没写的属性中有 subAttrs，则要把它们全取出来
   ;[...results].forEach(a => {
     if (a.subAttrs) {
       a.subAttrs.forEach(s => {
         s.attrs.forEach(suba => {
-          if (results.every(_ => _.name !== suba.name)) results.push(suba) // 去重
+          if (results.every(_ => !attrNameEquals(_.name, suba.name))) results.push(suba) // 去重
         })
       })
     }
   })
 
-  // 写了的属性需要找出 subAttrs
+  // 写了的属性需要找出 subAttrs（兼容驼峰/中划线判断已写）
   attrs
-    .filter(a => tagAttrs[a.name] != null && a.subAttrs && a.subAttrs.length)
+    .filter(a => attrNameExists(a.name, tagAttrs) && a.subAttrs && a.subAttrs.length)
     .forEach(a => {
-      const sub = (a.subAttrs || []).find(s => s.equal === tagAttrs[a.name])
-      if (sub) results.push(...sub.attrs.filter(sa => tagAttrs[sa.name] == null))
+      // 找到当前属性的已写值（兼容驼峰/中划线 key）
+      const writtenValue =
+        tagAttrs[a.name] != null ? tagAttrs[a.name] : tagAttrs[camelToKebab(a.name)] ?? tagAttrs[kebabToCamel(a.name)]
+      const sub = (a.subAttrs || []).find(s => s.equal === writtenValue)
+      if (sub) results.push(...sub.attrs.filter(sa => !attrNameExists(sa.name, tagAttrs)))
     })
 
   return results

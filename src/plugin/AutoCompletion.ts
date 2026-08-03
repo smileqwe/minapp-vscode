@@ -43,12 +43,16 @@ export default abstract class AutoCompletion {
     return this.isPug ? this.config.pugQuoteStyle : this.config.wxmlQuoteStyle
   }
 
-  constructor(public config: Config) { }
+  constructor(public config: Config) {}
 
-  getCustomOptions(doc: TextDocument): {
-    filename: string;
-    resolves: string[];
-  } | undefined {
+  getCustomOptions(
+    doc: TextDocument
+  ):
+    | {
+        filename: string
+        resolves: string[]
+      }
+    | undefined {
     return getCustomOptions(this.config, doc)
   }
 
@@ -149,7 +153,12 @@ export default abstract class AutoCompletion {
   /**
    * 创建组件名称的自动补全
    */
-  async createComponentSnippetItems(lc: LanguageConfig, doc: TextDocument, pos: Position, prefix?: string): Promise<CompletionItem[]> {
+  async createComponentSnippetItems(
+    lc: LanguageConfig,
+    doc: TextDocument,
+    pos: Position,
+    prefix?: string
+  ): Promise<CompletionItem[]> {
     const res = await autocompleteTagName(lc, this.getCustomOptions(doc))
     const filter = (key: string) => key && (!prefix || prefix.split('').every(c => key.includes(c)))
     const filterComponent = (t: TagItem) => filter(t.component.name)
@@ -190,7 +199,12 @@ export default abstract class AutoCompletion {
   /**
    * 创建组件属性的自动补全
    */
-  async createComponentAttributeSnippetItems(lc: LanguageConfig, doc: TextDocument, pos: Position, onlyClass = false): Promise<CompletionItem[]> {
+  async createComponentAttributeSnippetItems(
+    lc: LanguageConfig,
+    doc: TextDocument,
+    pos: Position,
+    onlyClass = false
+  ): Promise<CompletionItem[]> {
     const tag = getTagAtPosition(doc, pos)
     if (!tag) return []
     if (tag.isOnTagName) {
@@ -230,7 +244,16 @@ export default abstract class AutoCompletion {
       }
       return []
     } else if (!onlyClass) {
-      const res = await autocompleteTagAttr(tag.name, tag.attrs, lc, this.getCustomOptions(doc))
+      const attrNameStyle = this.config.attrNameStyle
+      const autoDecider = () => this.detectAttrNameStyle(doc)
+      const res = await autocompleteTagAttr(
+        tag.name,
+        tag.attrs,
+        lc,
+        this.getCustomOptions(doc),
+        attrNameStyle,
+        autoDecider
+      )
       let triggers: CompletionItem[] = []
 
       const { natives, basics } = res
@@ -272,7 +295,11 @@ export default abstract class AutoCompletion {
    *    :xxx.sync
    *    @xxx.default, @xxx.user, @xxx.stop
    */
-  async createSpecialAttributeSnippetItems(lc: LanguageConfig, doc: TextDocument, pos: Position): Promise<CompletionItem[]> {
+  async createSpecialAttributeSnippetItems(
+    lc: LanguageConfig,
+    doc: TextDocument,
+    pos: Position
+  ): Promise<CompletionItem[]> {
     const prefix = getTextAtPosition(doc, pos, /[:@\w\d.-]/) as string
     if (!prefix) return []
 
@@ -305,6 +332,35 @@ export default abstract class AutoCompletion {
     ]
   }
 
+  /**
+   * 检测当前文档自定义组件属性的主流命名风格（驼峰 vs 中划线）
+   * 用于 attrNameStyle=auto 时决定补全用哪种风格
+   */
+  private detectAttrNameStyle(doc: TextDocument): 'camel' | 'kebab' {
+    const text = doc.getText()
+    // 匹配属性名：xxx="..." 或 xxx='...' 或 xxx
+    // 统计含中划线且能转驼峰的属性 vs 含大写字母的属性
+    const attrRe = /\b([a-zA-Z][\w-]*[a-zA-Z])\s*=/g
+    let kebabCount = 0
+    let camelCount = 0
+    let m: RegExpExecArray | null
+    while ((m = attrRe.exec(text))) {
+      const name = m[1]
+      // 排除原生指令（wx:for 等）和事件绑定（bind:tap 等）
+      if (name.startsWith('wx:') || name.startsWith('bind') || name.startsWith('catch') || name.startsWith('data-'))
+        continue
+      // 含中划线且能转驼峰（至少两段）→ 中划线风格
+      if (name.includes('-') && name.replace(/-/g, '').length > 0) {
+        kebabCount++
+      }
+      // 含大写字母 → 驼峰风格
+      else if (/[A-Z]/.test(name)) {
+        camelCount++
+      }
+    }
+    return kebabCount > camelCount ? 'kebab' : 'camel'
+  }
+
   // 样式名自动补全
   async autoCompleteClassNames(doc: TextDocument, existsClassNames: string[]): Promise<CompletionItem[]> {
     const items: CompletionItem[] = []
@@ -322,13 +378,16 @@ export default abstract class AutoCompletion {
             i.kind = CompletionItemKind.Variable
             i.detail = ''
             i.sortText = 'style' + sfi
-            i.documentation = new MarkdownString().appendMarkdown(`<span style="color:#999">${filePath}</span>`).appendCodeblock(sty.doc, 'css')
+            i.documentation = new MarkdownString()
+              .appendMarkdown(`<span style="color:#999">${filePath}</span>`)
+              .appendCodeblock(sty.doc, 'css')
             items.push(i)
             cache[sty.name] = i
           } else {
-            (cache[sty.name].documentation as MarkdownString).appendMarkdown(`<span style="color:#999">${filePath}</span>`).appendCodeblock(sty.doc, 'css')
+            ;(cache[sty.name].documentation as MarkdownString)
+              .appendMarkdown(`<span style="color:#999">${filePath}</span>`)
+              .appendCodeblock(sty.doc, 'css')
           }
-          
         }
       })
     })
@@ -435,7 +494,7 @@ export default abstract class AutoCompletion {
     const props = getProp(doc.uri.fsPath, 'prop', pattern)
     const root = getRoot(doc)
     console.log(`[autoCompleteProps] 找到 ${props.length} 个变量`)
-    
+
     return props.map(l => {
       const c = new CompletionItem(l.name, CompletionItemKind.Variable)
       const filePath = root ? path.relative(root, l.loc.uri.fsPath) : path.basename(l.loc.uri.fsPath)
